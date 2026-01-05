@@ -26,18 +26,16 @@ const handlers = {
     const err = checkSqlConnection(res);
     if (err) return err;
 
-    const { id, imageUrl } = req.query;
-
-    // DELETE image from location
-    if (imageUrl && req.method === 'GET' && id) {
-      return handlers.DELETE_IMAGE(req, res);
-    }
+    const { id } = req.query;
 
     // GET single location
     if (id) {
       try {
         const result = await sql(`
-          SELECT id, "routeId", name, latitude, longitude, description, images, "createdAt", "updatedAt"
+          SELECT id, "routeId", location, code, no, delivery, "powerMode", 
+                 latitude, longitude, description, images, address, 
+                 "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl",
+                 "createdAt", "updatedAt"
           FROM "Location"
           WHERE id = $1
         `, [id]);
@@ -56,14 +54,20 @@ const handlers = {
     // GET all locations
     try {
       const result = await sql(`
-        SELECT id, "routeId", name, latitude, longitude, description, images, "createdAt", "updatedAt" 
+        SELECT id, "routeId", location, code, no, delivery, "powerMode",
+               latitude, longitude, description, images, address,
+               "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl",
+               "createdAt", "updatedAt"
         FROM "Location"
         ORDER BY "createdAt" DESC
       `);
       res.status(200).json(result);
     } catch (error) {
       console.error('Error fetching locations:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ 
+        error: error.message || 'Failed to fetch locations',
+        code: error.code
+      });
     }
   },
 
@@ -73,21 +77,22 @@ const handlers = {
     if (err) return err;
 
     const { id } = req.query;
-    const { routeId, name, latitude, longitude, description, imageUrl } = req.body;
+    const { routeId, location, code, no, delivery, powerMode, address, 
+            latitude, longitude, description, imageUrl, websiteLink,
+            qrCodeImageUrl, qrCodeDestinationUrl } = req.body;
 
     // POST add image to location
     if (id && imageUrl) {
-      if (!imageUrl) {
-        return res.status(400).json({ error: 'imageUrl is required' });
-      }
-
       try {
         const result = await sql(`
           UPDATE "Location"
-          SET images = array_append(images, $1),
+          SET images = array_append(COALESCE(images, '{}'), $1),
               "updatedAt" = NOW()
           WHERE id = $2
-          RETURNING id, "routeId", name, latitude, longitude, description, images, "createdAt", "updatedAt"
+          RETURNING id, "routeId", location, code, no, delivery, "powerMode",
+                    latitude, longitude, description, images, address,
+                    "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl",
+                    "createdAt", "updatedAt"
         `, [imageUrl, id]);
         
         if (result.length === 0) {
@@ -102,20 +107,29 @@ const handlers = {
     }
 
     // POST create location
-    if (!routeId || !name || latitude === undefined || longitude === undefined) {
+    if (!routeId || !location) {
       return res.status(400).json({ 
-        error: 'routeId, name, latitude, and longitude are required' 
+        error: 'routeId and location are required' 
       });
     }
 
     try {
       const result = await sql(`
         INSERT INTO "Location" (
-          "routeId", name, latitude, longitude, description, images, "createdAt", "updatedAt"
+          "routeId", location, code, no, delivery, "powerMode", 
+          latitude, longitude, description, images, address,
+          "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl",
+          "createdAt", "updatedAt"
         )
-        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
-        RETURNING id, "routeId", name, latitude, longitude, description, images, "createdAt", "updatedAt"
-      `, [routeId, name, latitude, longitude, description || null, []]);
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
+        RETURNING id, "routeId", location, code, no, delivery, "powerMode",
+                  latitude, longitude, description, images, address,
+                  "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl",
+                  "createdAt", "updatedAt"
+      `, [routeId, location, code || null, no || null, delivery || null, 
+          powerMode || null, latitude || null, longitude || null, 
+          description || null, [], address || null, websiteLink || null,
+          qrCodeImageUrl || null, qrCodeDestinationUrl || null]);
       
       res.status(201).json(result[0]);
     } catch (error) {
@@ -130,19 +144,35 @@ const handlers = {
     if (err) return err;
 
     const { id } = req.query;
-    const { name, latitude, longitude, description } = req.body;
+    const { location, code, no, delivery, powerMode, address,
+            latitude, longitude, description, websiteLink,
+            qrCodeImageUrl, qrCodeDestinationUrl } = req.body;
 
     try {
       const result = await sql(`
         UPDATE "Location"
-        SET name = COALESCE($1, name),
-            latitude = COALESCE($2, latitude),
-            longitude = COALESCE($3, longitude),
-            description = COALESCE($4, description),
+        SET location = COALESCE($1, location),
+            code = COALESCE($2, code),
+            no = COALESCE($3, no),
+            delivery = COALESCE($4, delivery),
+            "powerMode" = COALESCE($5, "powerMode"),
+            latitude = COALESCE($6, latitude),
+            longitude = COALESCE($7, longitude),
+            description = COALESCE($8, description),
+            address = COALESCE($9, address),
+            "websiteLink" = COALESCE($10, "websiteLink"),
+            "qrCodeImageUrl" = COALESCE($11, "qrCodeImageUrl"),
+            "qrCodeDestinationUrl" = COALESCE($12, "qrCodeDestinationUrl"),
             "updatedAt" = NOW()
-        WHERE id = $5
-        RETURNING id, "routeId", name, latitude, longitude, description, images, "createdAt", "updatedAt"
-      `, [name || null, latitude || null, longitude || null, description || null, id]);
+        WHERE id = $13
+        RETURNING id, "routeId", location, code, no, delivery, "powerMode",
+                  latitude, longitude, description, images, address,
+                  "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl",
+                  "createdAt", "updatedAt"
+      `, [location || null, code || null, no || null, delivery || null,
+          powerMode || null, latitude || null, longitude || null,
+          description || null, address || null, websiteLink || null,
+          qrCodeImageUrl || null, qrCodeDestinationUrl || null, id]);
       
       if (result.length === 0) {
         return res.status(404).json({ error: 'Location not found' });
@@ -164,7 +194,27 @@ const handlers = {
 
     // DELETE image from location
     if (imageUrl) {
-      return handlers.DELETE_IMAGE(req, res);
+      try {
+        const result = await sql(`
+          UPDATE "Location"
+          SET images = array_remove(COALESCE(images, '{}'), $1),
+              "updatedAt" = NOW()
+          WHERE id = $2
+          RETURNING id, "routeId", location, code, no, delivery, "powerMode",
+                    latitude, longitude, description, images, address,
+                    "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl",
+                    "createdAt", "updatedAt"
+        `, [imageUrl, id]);
+        
+        if (result.length === 0) {
+          return res.status(404).json({ error: 'Location not found' });
+        }
+        
+        return res.status(200).json(result[0]);
+      } catch (error) {
+        console.error('Error deleting image:', error);
+        return res.status(500).json({ error: error.message });
+      }
     }
 
     // DELETE location
@@ -178,34 +228,6 @@ const handlers = {
       res.status(200).json({ success: true, id });
     } catch (error) {
       console.error('Error deleting location:', error);
-      res.status(500).json({ error: error.message });
-    }
-  },
-
-  // DELETE image helper
-  async DELETE_IMAGE(req, res) {
-    const { id, imageUrl } = req.query;
-
-    if (!imageUrl) {
-      return res.status(400).json({ error: 'imageUrl is required' });
-    }
-
-    try {
-      const result = await sql(`
-        UPDATE "Location"
-        SET images = array_remove(images, $1),
-            "updatedAt" = NOW()
-        WHERE id = $2
-        RETURNING id, "routeId", name, latitude, longitude, description, images, "createdAt", "updatedAt"
-      `, [imageUrl, id]);
-      
-      if (result.length === 0) {
-        return res.status(404).json({ error: 'Location not found' });
-      }
-      
-      res.status(200).json(result[0]);
-    } catch (error) {
-      console.error('Error deleting image:', error);
       res.status(500).json({ error: error.message });
     }
   }
