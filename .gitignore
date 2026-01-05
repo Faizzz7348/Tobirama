@@ -34,3 +34,6 @@ dist-ssr
 # Dependencies
 package-lock.json
 yarn.lock
+COPY_PASTE_CODE.md
+FILE_INDEX.md
+...
