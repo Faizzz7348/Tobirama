@@ -1262,17 +1262,12 @@ export default function FlexibleScrollDemo() {
             const foundInDialog = dialogData.find(item => item.id === rowData.id);
             if (foundInDialog) {
                 latestRowData = foundInDialog;
-                console.log('📋 Using latest data from dialogData:', {
-                    id: foundInDialog.id,
-                    hasQrImage: !!foundInDialog.qrCodeImageUrl,
-                    hasQrUrl: !!foundInDialog.qrCodeDestinationUrl,
-                    qrCodeImageUrl: foundInDialog.qrCodeImageUrl,
-                    qrCodeDestinationUrl: foundInDialog.qrCodeDestinationUrl
-                });
             }
         }
         
-        console.log('✅ Setting selected row info:', latestRowData);
+        console.log('✅ Setting row data:', latestRowData);
+        
+        // Set all states synchronously in correct order
         setSelectedRowInfo(latestRowData);
         setIsRouteInfo(isRoute);
         setInfoEditData({
@@ -1286,7 +1281,8 @@ export default function FlexibleScrollDemo() {
         setInfoEditMode(false);
         setInfoModalHasChanges(false);
         
-        console.log('📂 Setting infoDialogVisible to true');
+        // Show dialog - NO setTimeout, direct call
+        console.log('📂 Opening info dialog');
         setInfoDialogVisible(true);
     };
     
@@ -4352,7 +4348,10 @@ export default function FlexibleScrollDemo() {
                         </div>
                     }
                     visible={infoDialogVisible} 
-                    style={{ width: deviceInfo.isMobile ? '95vw' : isRouteInfo ? '700px' : '500px' }} 
+                    style={{ 
+                        width: deviceInfo.isMobile ? '95vw' : isRouteInfo ? '700px' : '500px',
+                        zIndex: 9999
+                    }} 
                     modal
                     dismissableMask
                     closeOnEscape
