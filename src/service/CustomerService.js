@@ -274,7 +274,7 @@ export const CustomerService = {
     },
 
     // Save locations to API or localStorage
-    async saveLocations(locations) {
+    async saveLocations(locations, originalLocations = []) {
         if (USE_LOCALSTORAGE) {
             localStorage.setItem('locations', JSON.stringify(locations));
             console.log('💾 Locations saved to localStorage:', locations);
@@ -285,27 +285,71 @@ export const CustomerService = {
         try {
             console.log('💾 Saving locations to database:', locations);
             
-            const response = await fetch(`${API_BASE_URL}/locations`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ locations }),
+            // Separate locations into categories for smart saving
+            const newLocations = [];      // New rows with isNew=true or temp IDs
+            const existingLocations = []; // Existing rows that might have changed
+            
+            locations.forEach(loc => {
+                // Detect new locations (temp ID > 1000000000000 or isNew flag)
+                if (loc.isNew === true || (loc.id && loc.id > 1000000000000)) {
+                    // Skip the id for new locations - let DB generate it
+                    const { id, isNew, ...newLoc } = loc;
+                    newLocations.push(newLoc);
+                    console.log('➕ New location to create:', newLoc);
+                } else {
+                    existingLocations.push(loc);
+                    console.log('✏️ Existing location to update:', loc.id);
+                }
             });
             
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('❌ Failed to save locations:', response.status, errorText);
-                throw new Error(`Failed to save locations: ${response.status} ${errorText}`);
+            console.log(`📊 Split: ${newLocations.length} new, ${existingLocations.length} existing`);
+            
+            // Step 1: Create new locations
+            const createPromises = newLocations.map(newLoc =>
+                fetch(`${API_BASE_URL}/locations`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newLoc),
+                })
+                .then(r => r.json())
+            );
+            
+            const createdResults = await Promise.all(createPromises);
+            const createdCount = createdResults.filter(r => r && r.id).length;
+            console.log(`✅ Created ${createdCount} new locations`);
+            
+            // Step 2: Update existing locations (batch)
+            let updatedCount = 0;
+            if (existingLocations.length > 0) {
+                const updateResponse = await fetch(`${API_BASE_URL}/locations`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ locations: existingLocations }),
+                });
+                
+                if (!updateResponse.ok) {
+                    const errorText = await updateResponse.text();
+                    console.error('❌ Failed to update locations:', updateResponse.status, errorText);
+                    // Don't throw - we successfully created new rows
+                    console.warn('⚠️ Some locations failed to update, but new locations were created');
+                } else {
+                    const updateResult = await updateResponse.json();
+                    updatedCount = updateResult.updated || existingLocations.length;
+                    console.log(`✅ Updated ${updatedCount} existing locations`);
+                }
             }
             
             clearCache('locations'); // Clear all location caches
             clearCache('routes'); // Clear routes cache too (locationCount might change)
-            // Clear per-route caches
-            cache.routeLocations = {};
-            const result = await response.json();
-            console.log('✅ Locations saved successfully to database:', result);
+            cache.routeLocations = {}; // Clear per-route caches
             
+            const result = {
+                created: createdCount,
+                updated: updatedCount,
+                total: createdCount + updatedCount
+            };
+            
+            console.log('✅ Locations saved successfully to database:', result);
             return result;
         } catch (error) {
             console.error('❌ Error saving locations:', error);

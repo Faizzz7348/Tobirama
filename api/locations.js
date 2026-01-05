@@ -138,16 +138,72 @@ const handlers = {
     }
   },
 
-  // PUT update location
+  // PUT update location (single or batch)
   async PUT(req, res) {
     const err = checkSqlConnection(res);
     if (err) return err;
 
     const { id } = req.query;
-    const { location, code, no, delivery, powerMode, address,
+    const { locations, location, code, no, delivery, powerMode, address,
             latitude, longitude, description, websiteLink,
             qrCodeImageUrl, qrCodeDestinationUrl } = req.body;
 
+    // Batch update mode (multiple locations)
+    if (locations && Array.isArray(locations)) {
+      try {
+        const updated = [];
+        const failed = [];
+
+        for (const loc of locations) {
+          try {
+            const result = await sql(`
+              UPDATE "Location"
+              SET location = COALESCE($1, location),
+                  code = COALESCE($2, code),
+                  no = COALESCE($3, no),
+                  delivery = COALESCE($4, delivery),
+                  "powerMode" = COALESCE($5, "powerMode"),
+                  latitude = COALESCE($6, latitude),
+                  longitude = COALESCE($7, longitude),
+                  description = COALESCE($8, description),
+                  address = COALESCE($9, address),
+                  "websiteLink" = COALESCE($10, "websiteLink"),
+                  "qrCodeImageUrl" = COALESCE($11, "qrCodeImageUrl"),
+                  "qrCodeDestinationUrl" = COALESCE($12, "qrCodeDestinationUrl"),
+                  "updatedAt" = NOW()
+              WHERE id = $13
+              RETURNING id, "routeId", location, code, no, delivery, "powerMode",
+                        latitude, longitude, description, images, address,
+                        "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl",
+                        "createdAt", "updatedAt"
+            `, [loc.location || null, loc.code || null, loc.no || null, 
+                loc.delivery || null, loc.powerMode || null, 
+                loc.latitude || null, loc.longitude || null, 
+                loc.description || null, loc.address || null, 
+                loc.websiteLink || null, loc.qrCodeImageUrl || null, 
+                loc.qrCodeDestinationUrl || null, loc.id]);
+            
+            if (result.length > 0) {
+              updated.push(result[0]);
+            }
+          } catch (error) {
+            console.error(`Error updating location ${loc.id}:`, error);
+            failed.push({ id: loc.id, error: error.message });
+          }
+        }
+
+        return res.status(200).json({ 
+          updated: updated.length, 
+          failed: failed.length,
+          locations: updated 
+        });
+      } catch (error) {
+        console.error('Error in batch update:', error);
+        return res.status(500).json({ error: error.message });
+      }
+    }
+
+    // Single update mode (legacy)
     try {
       const result = await sql(`
         UPDATE "Location"
