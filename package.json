@@ -10,7 +10,8 @@
     "preview": "NODE_OPTIONS='--no-deprecation' vite preview",
     "clean": "rm -rf dist node_modules/.vite",
     "clean:all": "rm -rf dist node_modules/.vite node_modules && npm install",
-    "rebuild": "npm run clean && npm run build"
+    "rebuild": "npm run clean && npm run build",
+    "setup-db": "node setup-db.js"
   },
   "keywords": [
     "react",
