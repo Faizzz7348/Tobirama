@@ -1,9 +1,29 @@
 import { neon } from '@neondatabase/serverless';
 
-const sql = neon(process.env.DATABASE_URL);
+// Initialize Neon connection
+let sql;
+try {
+  sql = neon(process.env.DATABASE_URL || process.env.VITE_DATABASE_URL);
+} catch (error) {
+  console.error('Failed to initialize Neon connection:', error);
+}
+
+// Utility to check if sql is ready
+function checkSqlConnection(res) {
+  if (!sql) {
+    return res.status(500).json({ 
+      error: 'Database not connected',
+      hint: 'Check DATABASE_URL environment variable'
+    });
+  }
+  return null;
+}
 
 // GET all routes
 export async function getRoutes(req, res) {
+  const err = checkSqlConnection(res);
+  if (err) return err;
+
   try {
     const result = await sql(`
       SELECT id, name, description, "createdAt", "updatedAt" 
@@ -19,6 +39,9 @@ export async function getRoutes(req, res) {
 
 // GET single route with locations
 export async function getRoute(req, res) {
+  const err = checkSqlConnection(res);
+  if (err) return err;
+
   const { id } = req.query;
   try {
     const route = await sql(`
@@ -43,6 +66,9 @@ export async function getRoute(req, res) {
 
 // POST create route
 export async function createRoute(req, res) {
+  const err = checkSqlConnection(res);
+  if (err) return err;
+
   const { name, description } = req.body;
   
   if (!name) {
@@ -65,6 +91,9 @@ export async function createRoute(req, res) {
 
 // PUT update route
 export async function updateRoute(req, res) {
+  const err = checkSqlConnection(res);
+  if (err) return err;
+
   const { id } = req.query;
   const { name, description } = req.body;
 
@@ -91,6 +120,9 @@ export async function updateRoute(req, res) {
 
 // DELETE route
 export async function deleteRoute(req, res) {
+  const err = checkSqlConnection(res);
+  if (err) return err;
+
   const { id } = req.query;
 
   try {

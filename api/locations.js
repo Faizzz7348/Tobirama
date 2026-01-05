@@ -1,9 +1,29 @@
 import { neon } from '@neondatabase/serverless';
 
-const sql = neon(process.env.DATABASE_URL);
+// Initialize Neon connection
+let sql;
+try {
+  sql = neon(process.env.DATABASE_URL || process.env.VITE_DATABASE_URL);
+} catch (error) {
+  console.error('Failed to initialize Neon connection:', error);
+}
+
+// Utility to check if sql is ready
+function checkSqlConnection(res) {
+  if (!sql) {
+    return res.status(500).json({ 
+      error: 'Database not connected',
+      hint: 'Check DATABASE_URL environment variable'
+    });
+  }
+  return null;
+}
 
 // GET all locations
 export async function getLocations(req, res) {
+  const err = checkSqlConnection(res);
+  if (err) return err;
+
   try {
     const result = await sql(`
       SELECT id, "routeId", name, latitude, longitude, description, images, "createdAt", "updatedAt" 
@@ -19,6 +39,9 @@ export async function getLocations(req, res) {
 
 // GET single location
 export async function getLocation(req, res) {
+  const err = checkSqlConnection(res);
+  if (err) return err;
+
   const { id } = req.query;
   
   try {
@@ -41,6 +64,9 @@ export async function getLocation(req, res) {
 
 // POST create location
 export async function createLocation(req, res) {
+  const err = checkSqlConnection(res);
+  if (err) return err;
+
   const { routeId, name, latitude, longitude, description } = req.body;
 
   if (!routeId || !name || latitude === undefined || longitude === undefined) {
@@ -67,6 +93,9 @@ export async function createLocation(req, res) {
 
 // PUT update location
 export async function updateLocation(req, res) {
+  const err = checkSqlConnection(res);
+  if (err) return err;
+
   const { id } = req.query;
   const { name, latitude, longitude, description } = req.body;
 
@@ -95,6 +124,9 @@ export async function updateLocation(req, res) {
 
 // DELETE location
 export async function deleteLocation(req, res) {
+  const err = checkSqlConnection(res);
+  if (err) return err;
+
   const { id } = req.query;
 
   try {
@@ -113,6 +145,9 @@ export async function deleteLocation(req, res) {
 
 // POST add image to location
 export async function addImage(req, res) {
+  const err = checkSqlConnection(res);
+  if (err) return err;
+
   const { id } = req.query;
   const { imageUrl } = req.body;
 
@@ -142,6 +177,9 @@ export async function addImage(req, res) {
 
 // DELETE image from location
 export async function deleteImage(req, res) {
+  const err = checkSqlConnection(res);
+  if (err) return err;
+
   const { id, imageUrl } = req.query;
 
   if (!imageUrl) {
