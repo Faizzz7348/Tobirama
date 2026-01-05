@@ -2609,15 +2609,21 @@ export default function FlexibleScrollDemo() {
                             tooltip="View Map"
                             tooltipOptions={{ position: 'top' }}
                             text
+                            loading={selectedRowInfo?.id === rowData.id && infoDialogVisible}
                             onClick={async () => {
-                                // Fetch locations for this route
-                                const locations = await CustomerService.getDetailData(rowData.id);
-                                // Add locations array to rowData
-                                const routeWithLocations = {
-                                    ...rowData,
-                                    locations: locations || []
-                                };
-                                handleShowInfo(routeWithLocations, true);
+                                try {
+                                    // Fetch locations for this route
+                                    const locations = await CustomerService.getDetailData(rowData.id);
+                                    // Add locations array to rowData
+                                    const routeWithLocations = {
+                                        ...rowData,
+                                        locations: locations || []
+                                    };
+                                    handleShowInfo(routeWithLocations, true);
+                                } catch (error) {
+                                    console.error('❌ Error opening info for route:', error);
+                                    alert('Error loading route information. Check console for details.');
+                                }
                             }} 
                         />
                         <Button 
@@ -4241,7 +4247,14 @@ export default function FlexibleScrollDemo() {
                                         tooltip="View Location Info"
                                         tooltipOptions={{ position: 'top' }}
                                         text
-                                        onClick={() => handleShowInfo(rowData)}
+                                        onClick={() => {
+                                            try {
+                                                handleShowInfo(rowData);
+                                            } catch (error) {
+                                                console.error('❌ Error opening location info:', error);
+                                                alert('Error loading location information');
+                                            }
+                                        }}
                                         style={{ backgroundColor: isDark ? '#1a1a1a' : undefined }}
                                     />
 
