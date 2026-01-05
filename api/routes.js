@@ -102,14 +102,55 @@ const handlers = {
     }
   },
 
-  // PUT update route
+  // PUT update route (single or batch)
   async PUT(req, res) {
     const err = checkSqlConnection(res);
     if (err) return err;
 
     const { id } = req.query;
-    const { route, shift, warehouse, description } = req.body;
+    const { routes, route, shift, warehouse, description } = req.body;
 
+    // Batch update mode (multiple routes)
+    if (routes && Array.isArray(routes)) {
+      try {
+        const updated = [];
+        const failed = [];
+
+        for (const rt of routes) {
+          try {
+            const result = await sql(`
+              UPDATE "Route"
+              SET route = COALESCE($1, route),
+                  shift = COALESCE($2, shift),
+                  warehouse = COALESCE($3, warehouse),
+                  description = COALESCE($4, description),
+                  "updatedAt" = NOW()
+              WHERE id = $5
+              RETURNING id, route, shift, warehouse, description, "createdAt", "updatedAt"
+            `, [rt.route || null, rt.shift || null, rt.warehouse || null, 
+                rt.description || null, rt.id]);
+            
+            if (result.length > 0) {
+              updated.push(result[0]);
+            }
+          } catch (error) {
+            console.error(`Error updating route ${rt.id}:`, error);
+            failed.push({ id: rt.id, error: error.message });
+          }
+        }
+
+        return res.status(200).json({ 
+          updated: updated.length, 
+          failed: failed.length,
+          routes: updated 
+        });
+      } catch (error) {
+        console.error('Error in batch update:', error);
+        return res.status(500).json({ error: error.message });
+      }
+    }
+
+    // Single update mode (legacy)
     try {
       const result = await sql(`
         UPDATE "Route"
