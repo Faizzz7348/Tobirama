@@ -1,0 +1,190 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                ║
+║                         🔗 CARA INTEGRATE (RINGKAS)                           ║
+║                                                                                ║
+║                              Pick One Path ⬇️                                 ║
+║                                                                                ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+
+🏃 PATH 1: LANGSUNG PAKAI (5 MENIT)
+════════════════════════════════════════════════════════════════════════════════
+
+Kalau mau cepat, copy 5 lines ini ke component Anda:
+
+    import useImageUpload from '../hooks/useImageUpload';
+    
+    const { uploadImage } = useImageUpload();
+    const result = await uploadImage(file, locationId);
+    if (result.success) console.log('Saved:', result.url);
+
+✅ DONE!
+
+📖 Lengkapnya: COPY_PASTE_CODE.md → CODE 1
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+🎯 PATH 2: PAKAI COMPONENT (15 MENIT)
+════════════════════════════════════════════════════════════════════════════════
+
+Ada component siap pakai di: src/components/ImageUploadSection.jsx
+
+Tinggal pakai:
+
+    import ImageUploadSection from './ImageUploadSection';
+    
+    <ImageUploadSection locationId={123} />
+
+✅ DONE!
+
+📖 Lengkapnya: COPY_PASTE_CODE.md → CODE 4
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+🏢 PATH 3: INTEGRATE KE EXISTING (30 MENIT)
+════════════════════════════════════════════════════════════════════════════════
+
+Mau tambah ke TableRowModal atau component existing Anda?
+
+Pilih lokasi:
+  → Ke Modal?      baca INTEGRATION_GUIDE.md → CONTOH 1
+  → Ke Table?      baca INTEGRATION_GUIDE.md → CONTOH 2
+  → Custom?        baca INTEGRATION_GUIDE.md → CONTOH 3
+
+Follow step-by-step guide.
+
+✅ DONE!
+
+📖 Lengkapnya: INTEGRATION_GUIDE.md
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+📊 PILIHAN BERDASARKAN CARA KERJA
+════════════════════════════════════════════════════════════════════════════════
+
+❓ Saya developer yang suka quick & dirty:
+   → PATH 1 (5 min, copy-paste)
+
+❓ Saya mau component yang bisa reuse:
+   → PATH 2 (15 min, copy 1 component)
+
+❓ Saya perlu integrate ke modal/table yang sudah ada:
+   → PATH 3 (30 min, follow steps)
+
+❓ Saya mau understand architecture:
+   → docs/ARCHITECTURE_IMAGE_UPLOAD.md
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+⚡ SUPER QUICK COPY-PASTE (PATH 1)
+════════════════════════════════════════════════════════════════════════════════
+
+Di file React component Anda, paste ini:
+
+    import { useState } from 'react';
+    import useImageUpload from '../hooks/useImageUpload';
+
+    export function MyUpload() {
+        const [images, setImages] = useState([]);
+        const { uploadImage, isLoading, progress, error } = useImageUpload();
+
+        const handleUpload = async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            
+            const result = await uploadImage(file, 1); // 1 = locationId
+            if (result.success) {
+                setImages([...images, result.url]);
+            }
+        };
+
+        return (
+            <div>
+                <input type="file" onChange={handleUpload} disabled={isLoading} />
+                {isLoading && <p>Uploading {progress}%...</p>}
+                {error && <p style={{color:'red'}}>Error: {error}</p>}
+                {images.length > 0 && <p>✅ {images.length} images uploaded</p>}
+            </div>
+        );
+    }
+
+✅ Done! Sekarang sudah bisa upload!
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+✅ LANGKAH TERAKHIR
+════════════════════════════════════════════════════════════════════════════════
+
+Setelah integrate, test di browser:
+
+  1. Open aplikasi
+  2. Cari component yang baru
+  3. Upload file
+  4. Lihat di console → sudah ada URL dari ImgBB? ✅
+  5. Refresh page → masih ada imagenya? (Perlu backend untuk ini)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+📞 PERLU BANTUAN?
+════════════════════════════════════════════════════════════════════════════════
+
+✓ "Gimana cara pakai hook?"
+  → COPY_PASTE_CODE.md → CODE 1
+
+✓ "Mana component siap pakai?"
+  → src/components/ImageUploadSection.jsx
+  → atau COPY_PASTE_CODE.md → CODE 4
+
+✓ "Gimana integrate ke modal?"
+  → INTEGRATION_GUIDE.md → CONTOH 1
+
+✓ "Gimana remove images?"
+  → COPY_PASTE_CODE.md → CODE 6
+
+✓ "Error di console, gimana?"
+  → docs/TESTING_GUIDE.md
+  → atau COPY_PASTE_CODE.md (testing section)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+🎯 SUMMARY
+════════════════════════════════════════════════════════════════════════════════
+
+  PATH 1 → Super simple, 5 min
+  PATH 2 → Component siap pakai, 15 min
+  PATH 3 → Integrate ke existing, 30 min
+
+  Pilih satu, ikuti langkahnya, DONE! ✅
+
+  Semua sudah tested & production ready.
+
+
+════════════════════════════════════════════════════════════════════════════════
+
+SEKARANG TINGGAL:
+
+  1️⃣  Pilih PATH (1, 2, atau 3)
+  2️⃣  Baca guide yang sesuai
+  3️⃣  Copy code / ikuti steps
+  4️⃣  Test di browser
+  5️⃣  Done! 🎉
+
+════════════════════════════════════════════════════════════════════════════════
+
+📍 RECOMMENDED: Start dengan PATH 1 (5 minutes, super simple!)
+
+════════════════════════════════════════════════════════════════════════════════
