@@ -1,10 +1,19 @@
 import { useState, useEffect } from "react";
 import { InputText } from "primereact/inputtext";
 import { Button } from "primereact/button";
+import { CustomerService } from '../service/CustomerService.js';
 
-export function EditableDescriptionList({ value, onSave, isEditable = true }) {
-  const [items, setItems] = useState([]);
+export function EditableDescriptionList({ 
+  value, 
+  onSave, 
+  isEditable = true,
+  itemId = null,
+  itemType = 'location', // 'route' or 'location'
+  items = [] // Array of items to manage descriptions
+}) {
+  const [descriptionItems, setDescriptionItems] = useState([]);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // Parse the value string into items array
   useEffect(() => {

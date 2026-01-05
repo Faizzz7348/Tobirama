@@ -429,12 +429,88 @@ export const CustomerService = {
         }
     },
 
+    // Update route with description
+    async updateRoute(routeId, routeData) {
+        if (USE_LOCALSTORAGE) {
+            const routes = JSON.parse(localStorage.getItem('routes') || '[]');
+            const route = routes.find(r => r.id === routeId);
+            if (route) {
+                Object.assign(route, routeData);
+                localStorage.setItem('routes', JSON.stringify(routes));
+                clearCache('routes');
+                console.log('✅ Route updated in localStorage:', routeId, route);
+                return route;
+            }
+            return null;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/routes/${routeId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(routeData),
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to update route');
+            }
+            
+            clearCache('routes');
+            const result = await response.json();
+            console.log('✅ Route updated:', routeId, result);
+            return result;
+        } catch (error) {
+            console.error('Error updating route:', error);
+            throw error;
+        }
+    },
+
+    // Update location with description
+    async updateLocation(locationId, locationData) {
+        if (USE_LOCALSTORAGE) {
+            const locations = JSON.parse(localStorage.getItem('locations') || '[]');
+            const location = locations.find(l => l.id === locationId);
+            if (location) {
+                Object.assign(location, locationData);
+                localStorage.setItem('locations', JSON.stringify(locations));
+                clearCache('locations');
+                console.log('✅ Location updated in localStorage:', locationId, location);
+                return location;
+            }
+            return null;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/locations/${locationId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(locationData),
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to update location');
+            }
+            
+            clearCache('locations');
+            const result = await response.json();
+            console.log('✅ Location updated:', locationId, result);
+            return result;
+        } catch (error) {
+            console.error('Error updating location:', error);
+            throw error;
+        }
+    },
+
     // Dummy data fallbacks
     getDummyRoutes() {
         return [
-            { id: 1, route: 'KL 7', shift: 'PM', warehouse: '3AVK04' },
-            { id: 2, route: 'KL 8', shift: 'AM', warehouse: '3AVK05' },
-            { id: 3, route: 'SG 1', shift: 'PM', warehouse: '2BVK01' }
+            { id: 1, route: 'KL 7', shift: 'PM', warehouse: '3AVK04', description: '' },
+            { id: 2, route: 'KL 8', shift: 'AM', warehouse: '3AVK05', description: '' },
+            { id: 3, route: 'SG 1', shift: 'PM', warehouse: '2BVK01', description: '' }
         ];
     },
 
