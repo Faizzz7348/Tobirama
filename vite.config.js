@@ -6,7 +6,7 @@ export default defineConfig({
   build: {
     chunkSizeWarningLimit: 1500,
     rollupOptions: {
-      external: ['chart.js/auto'], // Mark chart.js as external (not used in this project)
+      external: ['chart.js/auto', 'quill'], // Mark chart.js and quill as external
       output: {
         manualChunks: {
           'primereact': ['primereact'],
