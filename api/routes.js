@@ -21,30 +21,37 @@ function checkSqlConnection(res) {
 
 // Route handlers
 const handlers = {
-  // GET all routes or single route
+  // GET all routes or single route with locations
   async GET(req, res) {
     const err = checkSqlConnection(res);
     if (err) return err;
 
     const { id } = req.query;
 
-    // GET single route with locations
+    // GET single route with its locations
     if (id) {
       try {
         const route = await sql(`
-          SELECT id, name, description, "createdAt", "updatedAt" 
+          SELECT id, route, shift, warehouse, description, "createdAt", "updatedAt" 
           FROM "Route" 
           WHERE id = $1
         `, [id]);
         
         const locations = await sql(`
-          SELECT id, "routeId", name, latitude, longitude, description, images, "createdAt", "updatedAt"
+          SELECT id, "routeId", location, code, no, delivery, "powerMode",
+                 latitude, longitude, description, images, address,
+                 "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl",
+                 "createdAt", "updatedAt"
           FROM "Location"
           WHERE "routeId" = $1
           ORDER BY "createdAt" DESC
         `, [id]);
         
-        return res.status(200).json({ route: route[0] || null, locations });
+        if (route.length === 0) {
+          return res.status(404).json({ error: 'Route not found' });
+        }
+        
+        return res.status(200).json({ route: route[0], locations });
       } catch (error) {
         console.error('Error fetching route:', error);
         return res.status(500).json({ error: error.message });
@@ -54,14 +61,17 @@ const handlers = {
     // GET all routes
     try {
       const result = await sql(`
-        SELECT id, name, description, "createdAt", "updatedAt" 
+        SELECT id, route, shift, warehouse, description, "createdAt", "updatedAt" 
         FROM "Route" 
         ORDER BY "createdAt" DESC
       `);
       res.status(200).json(result);
     } catch (error) {
       console.error('Error fetching routes:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ 
+        error: error.message || 'Failed to fetch routes',
+        code: error.code
+      });
     }
   },
 
@@ -70,18 +80,20 @@ const handlers = {
     const err = checkSqlConnection(res);
     if (err) return err;
 
-    const { name, description } = req.body;
-    
-    if (!name) {
-      return res.status(400).json({ error: 'Name is required' });
+    const { route, shift, warehouse, description } = req.body;
+
+    if (!route || !shift || !warehouse) {
+      return res.status(400).json({ 
+        error: 'route, shift, and warehouse are required' 
+      });
     }
 
     try {
       const result = await sql(`
-        INSERT INTO "Route" (name, description, "createdAt", "updatedAt")
-        VALUES ($1, $2, NOW(), NOW())
-        RETURNING id, name, description, "createdAt", "updatedAt"
-      `, [name, description || null]);
+        INSERT INTO "Route" (route, shift, warehouse, description, "createdAt", "updatedAt")
+        VALUES ($1, $2, $3, $4, NOW(), NOW())
+        RETURNING id, route, shift, warehouse, description, "createdAt", "updatedAt"
+      `, [route, shift, warehouse, description || null]);
       
       res.status(201).json(result[0]);
     } catch (error) {
@@ -96,17 +108,19 @@ const handlers = {
     if (err) return err;
 
     const { id } = req.query;
-    const { name, description } = req.body;
+    const { route, shift, warehouse, description } = req.body;
 
     try {
       const result = await sql(`
         UPDATE "Route"
-        SET name = COALESCE($1, name),
-            description = COALESCE($2, description),
+        SET route = COALESCE($1, route),
+            shift = COALESCE($2, shift),
+            warehouse = COALESCE($3, warehouse),
+            description = COALESCE($4, description),
             "updatedAt" = NOW()
-        WHERE id = $3
-        RETURNING id, name, description, "createdAt", "updatedAt"
-      `, [name || null, description || null, id]);
+        WHERE id = $5
+        RETURNING id, route, shift, warehouse, description, "createdAt", "updatedAt"
+      `, [route || null, shift || null, warehouse || null, description || null, id]);
       
       if (result.length === 0) {
         return res.status(404).json({ error: 'Route not found' });
