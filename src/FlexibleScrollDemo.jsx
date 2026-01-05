@@ -1254,6 +1254,8 @@ export default function FlexibleScrollDemo() {
     };
 
     const handleShowInfo = (rowData, isRoute = false) => {
+        console.log('🔍 handleShowInfo called with:', { rowData, isRoute });
+        
         // Get the latest data from dialogData if available
         let latestRowData = rowData;
         if (!isRoute && rowData.id) {
@@ -1270,6 +1272,7 @@ export default function FlexibleScrollDemo() {
             }
         }
         
+        console.log('✅ Setting selected row info:', latestRowData);
         setSelectedRowInfo(latestRowData);
         setIsRouteInfo(isRoute);
         setInfoEditData({
@@ -1282,6 +1285,8 @@ export default function FlexibleScrollDemo() {
         });
         setInfoEditMode(false);
         setInfoModalHasChanges(false);
+        
+        console.log('📂 Setting infoDialogVisible to true');
         setInfoDialogVisible(true);
     };
     
@@ -2610,6 +2615,14 @@ export default function FlexibleScrollDemo() {
                             tooltipOptions={{ position: 'top' }}
                             text
                             loading={selectedRowInfo?.id === rowData.id && infoDialogVisible}
+                            style={{
+                                color: '#3b82f6',
+                                fontSize: '1.1rem',
+                                padding: '0.5rem',
+                                cursor: 'pointer',
+                                opacity: 1,
+                                pointerEvents: 'auto'
+                            }}
                             onClick={async () => {
                                 try {
                                     // Fetch locations for this route
