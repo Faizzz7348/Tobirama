@@ -1031,7 +1031,18 @@ export default function FlexibleScrollDemo() {
                     <Button 
                         label="Close" 
                         icon="pi pi-times" 
-                        onClick={() => setDialogVisible(false)} 
+                        onClick={() => {
+                            setDialogVisible(false);
+                            // Clear dialog state completely when closing
+                            setTimeout(() => {
+                                setDialogData([]);
+                                setOriginalDialogData([]);
+                                setNewRows([]);
+                                setModifiedRows(new Set());
+                                setCurrentRouteId(null);
+                                setCurrentRouteName('');
+                            }, 300); // Delay to allow closing animation
+                        }} 
                         size="small"
                         outlined
                         style={{ 
@@ -3856,7 +3867,18 @@ export default function FlexibleScrollDemo() {
                     closeOnEscape
                     dismissableMask 
                     contentStyle={{ height: dialogMaximized ? '90vh' : (deviceInfo.isMobile ? '400px' : '500px') }} 
-                    onHide={() => setDialogVisible(false)} 
+                    onHide={() => {
+                        setDialogVisible(false);
+                        // Clear dialog state completely when closing
+                        setTimeout(() => {
+                            setDialogData([]);
+                            setOriginalDialogData([]);
+                            setNewRows([]);
+                            setModifiedRows(new Set());
+                            setCurrentRouteId(null);
+                            setCurrentRouteName('');
+                        }, 300); // Delay to allow closing animation
+                    }} 
                     footer={dialogFooterTemplate}
                     headerStyle={{ color: isDark ? '#fff' : '#000' }}
                     headerClassName={isDark ? '' : 'light-mode-dialog-header'}
