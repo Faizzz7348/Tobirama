@@ -2178,39 +2178,115 @@ export default function FlexibleScrollDemo() {
         setDeleteConfirmVisible(true);
     };
     
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (deleteType === 'location') {
             const locationToDelete = deleteTarget.data;
-            const updatedData = dialogData.filter(data => data.id !== deleteTarget.id);
-            setDialogData(sortDialogData(updatedData));
-            setRouteHasUnsavedChanges(currentRouteId, true);
             
-            // Add to changelog
-            addChangelogEntry('delete', 'location', {
-                route: currentRouteName,
-                code: locationToDelete?.code || 'Unknown',
-                location: locationToDelete?.location || 'Unknown'
-            });
+            // If it's a new row (temp ID), just remove from state
+            if (!locationToDelete.id || String(locationToDelete.id).startsWith('new-')) {
+                const updatedData = dialogData.filter(data => data.id !== deleteTarget.id);
+                setDialogData(sortDialogData(updatedData));
+                setNewDialogRows(prev => prev.filter(id => id !== deleteTarget.id));
+                
+                // Add to changelog
+                addChangelogEntry('delete', 'location', {
+                    route: currentRouteName,
+                    code: locationToDelete?.code || 'Unknown',
+                    location: locationToDelete?.location || 'Unknown'
+                });
+                
+                calculateColumnWidths(updatedData);
+                setDeleteConfirmVisible(false);
+                setDeleteTarget(null);
+                setDeleteType(null);
+                return;
+            }
             
-            // Deleted dialog row
-            
-            // Recalculate column widths after delete
-            calculateColumnWidths(updatedData);
+            // Delete from database
+            try {
+                await customerService.deleteLocation(locationToDelete.id);
+                
+                const updatedData = dialogData.filter(data => data.id !== deleteTarget.id);
+                setDialogData(sortDialogData(updatedData));
+                setRouteHasUnsavedChanges(currentRouteId, false); // Already saved to DB
+                
+                // Add to changelog
+                addChangelogEntry('delete', 'location', {
+                    route: currentRouteName,
+                    code: locationToDelete?.code || 'Unknown',
+                    location: locationToDelete?.location || 'Unknown'
+                });
+                
+                // Recalculate column widths after delete
+                calculateColumnWidths(updatedData);
+                
+                toast.current?.show({
+                    severity: 'success',
+                    summary: 'Location Deleted',
+                    detail: `${locationToDelete.location} has been deleted`,
+                    life: 3000
+                });
+            } catch (error) {
+                console.error('Error deleting location:', error);
+                toast.current?.show({
+                    severity: 'error',
+                    summary: 'Delete Failed',
+                    detail: error.message || 'Failed to delete location',
+                    life: 5000
+                });
+            }
         } else if (deleteType === 'route') {
             const routeToDelete = deleteTarget.data;
-            const updatedRoutes = routes.filter(route => route.id !== deleteTarget.id);
-            // Sort routes after delete to maintain A-Z, 1-10 order
-            setRoutes(sortRoutes(updatedRoutes));
-            setHasUnsavedChanges(true);
             
-            // Add to changelog
-            addChangelogEntry('delete', 'route', {
-                route: routeToDelete?.route || 'Unknown',
-                shift: routeToDelete?.shift || '',
-                warehouse: routeToDelete?.warehouse || ''
-            });
+            // If it's a new row (temp ID), just remove from state
+            if (!routeToDelete.id || String(routeToDelete.id).startsWith('new-')) {
+                const updatedRoutes = routes.filter(route => route.id !== deleteTarget.id);
+                setRoutes(sortRoutes(updatedRoutes));
+                setNewRows(prev => prev.filter(id => id !== deleteTarget.id));
+                
+                // Add to changelog
+                addChangelogEntry('delete', 'route', {
+                    route: routeToDelete?.route || 'Unknown',
+                    shift: routeToDelete?.shift || '',
+                    warehouse: routeToDelete?.warehouse || ''
+                });
+                
+                setDeleteConfirmVisible(false);
+                setDeleteTarget(null);
+                setDeleteType(null);
+                return;
+            }
             
-            // Deleted row
+            // Delete from database
+            try {
+                await customerService.deleteRoute(routeToDelete.id);
+                
+                const updatedRoutes = routes.filter(route => route.id !== deleteTarget.id);
+                setRoutes(sortRoutes(updatedRoutes));
+                setHasUnsavedChanges(false); // Already saved to DB
+                
+                // Add to changelog
+                addChangelogEntry('delete', 'route', {
+                    route: routeToDelete?.route || 'Unknown',
+                    shift: routeToDelete?.shift || '',
+                    warehouse: routeToDelete?.warehouse || ''
+                });
+                
+                toast.current?.show({
+                    severity: 'success',
+                    summary: 'Route Deleted',
+                    detail: `${routeToDelete.route} has been deleted`,
+                    life: 3000
+                });
+            } catch (error) {
+                console.error('Error deleting route:', error);
+                toast.current?.show({
+                    severity: 'error',
+                    summary: 'Delete Failed',
+                    detail: error.message || 'Failed to delete route',
+                    life: 5000
+                });
+            }
         }
         setDeleteConfirmVisible(false);
         setDeleteTarget(null);

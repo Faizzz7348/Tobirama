@@ -423,6 +423,48 @@ export const CustomerService = {
         }
     },
 
+    // Delete route
+    async deleteRoute(id) {
+        if (USE_LOCALSTORAGE) {
+            const routes = JSON.parse(localStorage.getItem('routes') || '[]');
+            const locations = JSON.parse(localStorage.getItem('locations') || '[]');
+            
+            // Delete route and its locations
+            const filteredRoutes = routes.filter(route => route.id !== id);
+            const filteredLocations = locations.filter(loc => loc.routeId !== id);
+            
+            localStorage.setItem('routes', JSON.stringify(filteredRoutes));
+            localStorage.setItem('locations', JSON.stringify(filteredLocations));
+            
+            console.log('🗑️ Route and its locations deleted from localStorage:', id);
+            clearCache('routes');
+            clearCache('locations');
+            return { success: true, message: 'Route deleted from localStorage' };
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/routes`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id }),
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to delete route');
+            }
+            
+            clearCache('routes');
+            clearCache('locations');
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Error deleting route:', error);
+            throw error;
+        }
+    },
+
     // Add images to location
     async addImageToLocation(locationId, imageUrls) {
         if (USE_LOCALSTORAGE) {
