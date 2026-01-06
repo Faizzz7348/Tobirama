@@ -524,6 +524,10 @@ export default function FlexibleScrollDemo() {
     const [addRowMode, setAddRowMode] = useState(false);
     const [newRows, setNewRows] = useState([]);
     
+    // Track deleted items for batch deletion on save
+    const [deletedRoutes, setDeletedRoutes] = useState([]);
+    const [deletedLocations, setDeletedLocations] = useState([]);
+    
     // Link Confirmation Dialog State
     const [linkConfirmVisible, setLinkConfirmVisible] = useState(false);
     const [pendingLinkData, setPendingLinkData] = useState({ url: '', type: '' });
@@ -1786,9 +1790,23 @@ export default function FlexibleScrollDemo() {
         setSaving(true);
         
         try {
-            // Starting save operation
+            // Step 1: Delete marked items first
+            let deletedRoutesCount = 0;
+            let deletedLocationsCount = 0;
             
-            // Save both routes and locations
+            if (deletedRoutes.length > 0) {
+                console.log('🗑️ Deleting routes:', deletedRoutes);
+                await Promise.all(deletedRoutes.map(id => CustomerService.deleteRoute(id)));
+                deletedRoutesCount = deletedRoutes.length;
+            }
+            
+            if (deletedLocations.length > 0) {
+                console.log('🗑️ Deleting locations:', deletedLocations);
+                await Promise.all(deletedLocations.map(id => CustomerService.deleteLocation(id)));
+                deletedLocationsCount = deletedLocations.length;
+            }
+            
+            // Step 2: Save both routes and locations
             const results = await Promise.all([
                 CustomerService.saveRoutes(routes),
                 CustomerService.saveLocations(dialogData)
@@ -1817,19 +1835,36 @@ export default function FlexibleScrollDemo() {
             // Clear modified rows tracking
             setModifiedRows(new Set());
             setNewRows([]);
+            // Clear deleted items tracking
+            setDeletedRoutes([]);
+            setDeletedLocations([]);
             
             // Check if using localStorage
             const isLocalStorage = results[0].message?.includes('localStorage');
             
-            // Success message with custom sort info
-            let message = isCustomSorted 
-                ? '✅ Changes saved successfully!\n📊 Custom sort order has been saved.'
-                : '✅ Changes saved successfully!';
+            // Success message with deletion info
+            let message = '✅ Changes saved successfully!\n\n';
             
             if (isLocalStorage) {
-                message += '\n\n💾 Using localStorage (Development Mode)\nData akan kekal selepas refresh!';
+                message += '💾 Using localStorage (Development Mode)\n';
             } else {
-                message += `\n\n🗄️ Saved to Database\n✅ Routes: ${results[0].created} created, ${results[0].updated} updated\n✅ Locations: ${results[1].created} created, ${results[1].updated} updated`;
+                message += '🗄️ Database Updated:\n';
+            }
+            
+            // Add deletion counts
+            if (deletedRoutesCount > 0) {
+                message += `🗑️ Deleted ${deletedRoutesCount} route${deletedRoutesCount > 1 ? 's' : ''}\n`;
+            }
+            if (deletedLocationsCount > 0) {
+                message += `🗑️ Deleted ${deletedLocationsCount} location${deletedLocationsCount > 1 ? 's' : ''}\n`;
+            }
+            
+            // Add creation/update counts
+            message += `✅ Routes: ${results[0].created || 0} created, ${results[0].updated || 0} updated\n`;
+            message += `✅ Locations: ${results[1].created || 0} created, ${results[1].updated || 0} updated`;
+            
+            if (isCustomSorted) {
+                message += '\n\n📊 Custom sort order has been saved.';
             }
             
             alert(message);
@@ -1851,6 +1886,9 @@ export default function FlexibleScrollDemo() {
         setHasUnsavedChanges(false);
         // Clear all route-specific unsaved changes
         setRouteUnsavedChanges(new Map());
+        // Clear deleted items tracking
+        setDeletedRoutes([]);
+        setDeletedLocations([]);
     };
 
     const handleToggleEditMode = () => {
@@ -1880,6 +1918,9 @@ export default function FlexibleScrollDemo() {
                 setSortOrders({});
                 setInfoEditMode(false);
                 setModifiedRows(new Set());
+                // Clear deleted items tracking
+                setDeletedRoutes([]);
+                setDeletedLocations([]);
                 
                 // Cancel any new unsaved rows
                 const filteredData = dialogData.filter(row => !newRows.includes(row.id));
@@ -2182,11 +2223,24 @@ export default function FlexibleScrollDemo() {
         if (deleteType === 'location') {
             const locationToDelete = deleteTarget.data;
             
-            // If it's a new row (temp ID), just remove from state
-            if (!locationToDelete.id || String(locationToDelete.id).startsWith('new-')) {
+            // Check if it's a new unsaved row
+            const isNewRow = !locationToDelete.id || String(locationToDelete.id).startsWith('new-');
+            
+            // In edit mode OR if it's a new row, just mark for deletion without calling API
+            if (editMode || isNewRow) {
                 const updatedData = dialogData.filter(data => data.id !== deleteTarget.id);
                 setDialogData(sortDialogData(updatedData));
-                setNewDialogRows(prev => prev.filter(id => id !== deleteTarget.id));
+                
+                // Remove from newRows if it was a new row
+                if (isNewRow) {
+                    setNewRows(prev => prev.filter(id => id !== deleteTarget.id));
+                } else {
+                    // Add to deletedLocations for batch deletion on save
+                    setDeletedLocations(prev => [...prev, locationToDelete.id]);
+                    // Mark route as having unsaved changes
+                    setRouteHasUnsavedChanges(currentRouteId, true);
+                    setHasUnsavedChanges(true);
+                }
                 
                 // Add to changelog
                 addChangelogEntry('delete', 'location', {
@@ -2196,19 +2250,26 @@ export default function FlexibleScrollDemo() {
                 });
                 
                 calculateColumnWidths(updatedData);
+                
+                toast.current?.show({
+                    severity: 'info',
+                    summary: 'Location Marked for Deletion',
+                    detail: isNewRow ? 'New location removed' : 'Location will be deleted when you save',
+                    life: 3000
+                });
+                
                 setDeleteConfirmVisible(false);
                 setDeleteTarget(null);
                 setDeleteType(null);
                 return;
             }
             
-            // Delete from database
+            // Not in edit mode - delete immediately from database
             try {
                 await customerService.deleteLocation(locationToDelete.id);
                 
                 const updatedData = dialogData.filter(data => data.id !== deleteTarget.id);
                 setDialogData(sortDialogData(updatedData));
-                setRouteHasUnsavedChanges(currentRouteId, false); // Already saved to DB
                 
                 // Add to changelog
                 addChangelogEntry('delete', 'location', {
@@ -2238,11 +2299,23 @@ export default function FlexibleScrollDemo() {
         } else if (deleteType === 'route') {
             const routeToDelete = deleteTarget.data;
             
-            // If it's a new row (temp ID), just remove from state
-            if (!routeToDelete.id || String(routeToDelete.id).startsWith('new-')) {
+            // Check if it's a new unsaved row
+            const isNewRow = !routeToDelete.id || String(routeToDelete.id).startsWith('new-');
+            
+            // In edit mode OR if it's a new row, just mark for deletion without calling API
+            if (editMode || isNewRow) {
                 const updatedRoutes = routes.filter(route => route.id !== deleteTarget.id);
                 setRoutes(sortRoutes(updatedRoutes));
-                setNewRows(prev => prev.filter(id => id !== deleteTarget.id));
+                
+                // Remove from newRows if it was a new row
+                if (isNewRow) {
+                    setNewRows(prev => prev.filter(id => id !== deleteTarget.id));
+                } else {
+                    // Add to deletedRoutes for batch deletion on save
+                    setDeletedRoutes(prev => [...prev, routeToDelete.id]);
+                    // Mark as having unsaved changes
+                    setHasUnsavedChanges(true);
+                }
                 
                 // Add to changelog
                 addChangelogEntry('delete', 'route', {
@@ -2251,19 +2324,25 @@ export default function FlexibleScrollDemo() {
                     warehouse: routeToDelete?.warehouse || ''
                 });
                 
+                toast.current?.show({
+                    severity: 'info',
+                    summary: 'Route Marked for Deletion',
+                    detail: isNewRow ? 'New route removed' : 'Route will be deleted when you save',
+                    life: 3000
+                });
+                
                 setDeleteConfirmVisible(false);
                 setDeleteTarget(null);
                 setDeleteType(null);
                 return;
             }
             
-            // Delete from database
+            // Not in edit mode - delete immediately from database
             try {
                 await customerService.deleteRoute(routeToDelete.id);
                 
                 const updatedRoutes = routes.filter(route => route.id !== deleteTarget.id);
                 setRoutes(sortRoutes(updatedRoutes));
-                setHasUnsavedChanges(false); // Already saved to DB
                 
                 // Add to changelog
                 addChangelogEntry('delete', 'route', {
