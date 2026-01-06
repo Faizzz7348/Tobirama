@@ -1748,6 +1748,30 @@ export default function FlexibleScrollDemo() {
     };
 
     const handleSaveChanges = async () => {
+        // Validation: Check routes have required fields
+        const invalidRoutes = routes.filter(r => {
+            // Check if it's a new row or edited row
+            const isNewOrEdited = newRows.includes(r.id) || r.route || r.shift || r.warehouse;
+            if (!isNewOrEdited) return false; // Skip unchanged rows
+            
+            return !r.route?.trim() || !r.shift?.trim() || !r.warehouse?.trim();
+        });
+        
+        if (invalidRoutes.length > 0) {
+            alert('⚠️ Validation Error\n\nSome routes are missing required fields:\n• Route name\n• Shift\n• Warehouse\n\nPlease fill in all required fields before saving.');
+            return;
+        }
+        
+        // Validation: Check if any locations have temp routeId
+        const locationsWithTempRouteId = dialogData.filter(loc => 
+            loc.routeId && loc.routeId > 2147483647
+        );
+        
+        if (locationsWithTempRouteId.length > 0) {
+            alert('⚠️ Cannot Save Locations\n\nYou have locations assigned to unsaved routes.\n\nPlease save the route first, then add locations to it.');
+            return;
+        }
+        
         setSaving(true);
         
         try {

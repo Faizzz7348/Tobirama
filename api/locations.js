@@ -113,6 +113,16 @@ const handlers = {
       });
     }
 
+    // Validate routeId is a reasonable integer (not a temp timestamp)
+    const routeIdNum = parseInt(routeId);
+    if (isNaN(routeIdNum) || routeIdNum > 2147483647) {
+      return res.status(400).json({ 
+        error: 'Invalid routeId: must be a valid integer (not a temporary ID)',
+        received: routeId,
+        hint: 'Make sure the route is saved to database before adding locations'
+      });
+    }
+
     try {
       const result = await sql(`
         INSERT INTO "Location" (

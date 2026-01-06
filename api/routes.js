@@ -87,16 +87,17 @@ const handlers = {
 
     // Check required fields (handle empty strings too)
     const missingFields = [];
-    if (!route || route.trim() === '') missingFields.push('route');
-    if (!shift || shift.trim() === '') missingFields.push('shift');
-    if (!warehouse || warehouse.trim() === '') missingFields.push('warehouse');
+    if (!route || typeof route !== 'string' || route.trim() === '') missingFields.push('route');
+    if (!shift || typeof shift !== 'string' || shift.trim() === '') missingFields.push('shift');
+    if (!warehouse || typeof warehouse !== 'string' || warehouse.trim() === '') missingFields.push('warehouse');
 
     if (missingFields.length > 0) {
       return res.status(400).json({ 
-        error: 'Missing required fields',
+        error: 'Missing or empty required fields',
         required: ['route', 'shift', 'warehouse'],
         missing: missingFields,
-        received: req.body
+        received: req.body,
+        hint: 'All fields must have non-empty values'
       });
     }
 
