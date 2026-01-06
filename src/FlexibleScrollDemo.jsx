@@ -1008,9 +1008,9 @@ export default function FlexibleScrollDemo() {
                             label="Reset Order" 
                             icon="pi pi-refresh" 
                             onClick={() => {
-                                // Clear custom sort from localStorage
-                                localStorage.removeItem('isCustomSorted');
-                                localStorage.removeItem('customSortedOrder');
+                                // Clear custom sort from localStorage PER ROUTE
+                                localStorage.removeItem(`isCustomSorted_${currentRouteId}`);
+                                localStorage.removeItem(`customSortedOrder_${currentRouteId}`);
                                 // Reset to default sort
                                 const sortedData = sortDialogData(dialogData);
                                 setDialogData(sortedData);
@@ -2009,9 +2009,9 @@ export default function FlexibleScrollDemo() {
         setCustomSortMode(false);
         setSortOrders({});
         setIsCustomSorted(true);
-        // Save custom sort state to localStorage
-        localStorage.setItem('isCustomSorted', 'true');
-        localStorage.setItem('customSortedOrder', JSON.stringify(sortedData.map(row => row.id)));
+        // Save custom sort state to localStorage PER ROUTE
+        localStorage.setItem(`isCustomSorted_${currentRouteId}`, 'true');
+        localStorage.setItem(`customSortedOrder_${currentRouteId}`, JSON.stringify(sortedData.map(row => row.id)));
         setActiveFunction(null);
         setFunctionDropdownVisible(false);
         
@@ -2679,12 +2679,21 @@ export default function FlexibleScrollDemo() {
                             onClick={() => {
                                 setCurrentRouteId(rowData.id);
                                 setCurrentRouteName(rowData.route);
+                                
+                                // Reset states for new route
+                                setCustomSortMode(false);
+                                setSortOrders({});
+                                setNewRows([]);
+                                setModifiedRows(new Set());
+                                
                                 CustomerService.getDetailData(rowData.id).then((data) => {
                                     let sortedData = sortDialogData(data);
                                     
-                                    // Check if there's a saved custom sort order
-                                    const isCustomSortedSaved = localStorage.getItem('isCustomSorted') === 'true';
-                                    const savedSortOrder = localStorage.getItem('customSortedOrder');
+                                    // Check if there's a saved custom sort order FOR THIS SPECIFIC ROUTE
+                                    const routeSortKey = `customSortedOrder_${rowData.id}`;
+                                    const routeCustomSortKey = `isCustomSorted_${rowData.id}`;
+                                    const isCustomSortedSaved = localStorage.getItem(routeCustomSortKey) === 'true';
+                                    const savedSortOrder = localStorage.getItem(routeSortKey);
                                     
                                     if (isCustomSortedSaved && savedSortOrder) {
                                         try {
@@ -2716,18 +2725,13 @@ export default function FlexibleScrollDemo() {
                                         }
                                     }
                                     
-                                    // Preserve existing new rows (not yet saved)
-                                    const existingNewRows = dialogData.filter(row => newRows.includes(row.id));
-                                    
-                                    // Merge: existing new rows + fresh data from database
-                                    const mergedData = [...existingNewRows, ...sortedData];
-                                    
-                                    setDialogData(mergedData);
-                                    setOriginalDialogData(sortedData); // Keep original as DB data only
+                                    // Don't merge with previous route data - use fresh data only
+                                    setDialogData(sortedData);
+                                    setOriginalDialogData(sortedData);
                                     setDialogVisible(true);
                                     setIsCustomSorted(isCustomSortedSaved);
                                     // Calculate column widths for new data
-                                    calculateColumnWidths(mergedData);
+                                    calculateColumnWidths(sortedData);
                                 });
                             }} 
                         />
