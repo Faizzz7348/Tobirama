@@ -2606,15 +2606,25 @@ export default function FlexibleScrollDemo() {
                             tooltipOptions={{ position: 'top' }}
                             text
                             onClick={() => {
+                                // Check if switching to different route
+                                const isSameRoute = currentRouteId === rowData.id;
+                                
                                 setCurrentRouteId(rowData.id);
                                 setCurrentRouteName(rowData.route);
                                 CustomerService.getDetailData(rowData.id).then((data) => {
                                     const sortedData = sortDialogData(data);
                                     
-                                    // Preserve existing new rows (not yet saved)
-                                    const existingNewRows = dialogData.filter(row => newRows.includes(row.id));
+                                    // Only preserve new rows from the SAME route to avoid mixing route data
+                                    const existingNewRows = isSameRoute 
+                                        ? dialogData.filter(row => newRows.includes(row.id))
+                                        : [];
                                     
-                                    // Merge: existing new rows + fresh data from database
+                                    // If switching to different route, clear new rows state
+                                    if (!isSameRoute) {
+                                        setNewRows([]);
+                                    }
+                                    
+                                    // Merge: existing new rows (if same route) + fresh data from database
                                     const mergedData = [...existingNewRows, ...sortedData];
                                     
                                     setDialogData(mergedData);
