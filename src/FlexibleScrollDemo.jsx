@@ -384,6 +384,8 @@ export default function FlexibleScrollDemo() {
             }
         }
         return {
+            id: true,
+            routeId: true,
             no: true,
             code: true,
             location: true,
@@ -3973,6 +3975,32 @@ export default function FlexibleScrollDemo() {
                                 style={{ width: '60px' }}
                             />
                         )}
+                        {visibleColumns.id && (
+                            <Column 
+                                field="id" 
+                                header="ID" 
+                                align="center" 
+                                alignHeader="center"
+                                body={(rowData) => {
+                                    if (rowData.id === 'frozen-row') return '∞';
+                                    return rowData.id;
+                                }}
+                                style={{ width: '60px' }}
+                            />
+                        )}
+                        {visibleColumns.routeId && (
+                            <Column 
+                                field="routeId" 
+                                header="Route ID" 
+                                align="center" 
+                                alignHeader="center"
+                                body={(rowData) => {
+                                    if (rowData.id === 'frozen-row') return '-';
+                                    return rowData.routeId || '-';
+                                }}
+                                style={{ width: '70px' }}
+                            />
+                        )}
                         {visibleColumns.no && (
                             <Column 
                                 header="No" 
@@ -6324,6 +6352,8 @@ export default function FlexibleScrollDemo() {
                     <div style={{ padding: '1rem 0' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             {[
+                                { key: 'id', label: 'ID' },
+                                { key: 'routeId', label: 'Route ID' },
                                 { key: 'no', label: 'No' },
                                 { key: 'code', label: 'Code' },
                                 { key: 'location', label: 'Location' },
