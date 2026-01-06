@@ -26,9 +26,9 @@ const handlers = {
     const err = checkSqlConnection(res);
     if (err) return err;
 
-    const { id, routeId } = req.query;
+    const { id } = req.query;
 
-    // GET single location by ID
+    // GET single location
     if (id) {
       try {
         const result = await sql(`
@@ -51,27 +51,7 @@ const handlers = {
       }
     }
 
-    // GET locations filtered by routeId
-    if (routeId) {
-      try {
-        const result = await sql(`
-          SELECT id, "routeId", location, code, no, delivery, "powerMode",
-                 latitude, longitude, description, images, address,
-                 "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl",
-                 "createdAt", "updatedAt"
-          FROM "Location"
-          WHERE "routeId" = $1
-          ORDER BY "createdAt" DESC
-        `, [routeId]);
-        
-        return res.status(200).json(result);
-      } catch (error) {
-        console.error('Error fetching locations by routeId:', error);
-        return res.status(500).json({ error: error.message });
-      }
-    }
-
-    // GET all locations (no filter)
+    // GET all locations
     try {
       const result = await sql(`
         SELECT id, "routeId", location, code, no, delivery, "powerMode",
@@ -133,13 +113,12 @@ const handlers = {
       });
     }
 
-    // Validate routeId is a reasonable integer (not a temp timestamp)
+    // Validate routeId is a reasonable number
     const routeIdNum = parseInt(routeId);
-    if (isNaN(routeIdNum) || routeIdNum > 2147483647) {
+    if (isNaN(routeIdNum) || routeIdNum < 0) {
       return res.status(400).json({ 
-        error: 'Invalid routeId: must be a valid integer (not a temporary ID)',
-        received: routeId,
-        hint: 'Make sure the route is saved to database before adding locations'
+        error: 'Invalid routeId: must be a valid positive number',
+        received: routeId
       });
     }
 
@@ -276,7 +255,9 @@ const handlers = {
     const err = checkSqlConnection(res);
     if (err) return err;
 
-    const { id, imageUrl } = req.query;
+    // Accept id from either query params or body (for compatibility)
+    const id = req.query.id || req.body?.id;
+    const { imageUrl } = req.query;
 
     // DELETE image from location
     if (imageUrl) {

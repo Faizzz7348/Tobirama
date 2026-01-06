@@ -192,7 +192,8 @@ const handlers = {
     const err = checkSqlConnection(res);
     if (err) return err;
 
-    const { id } = req.query;
+    // Accept id from either query params or body (for compatibility)
+    const id = req.query.id || req.body?.id;
 
     try {
       // Delete locations first (foreign key constraint)

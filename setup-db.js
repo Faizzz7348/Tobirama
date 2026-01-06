@@ -43,7 +43,7 @@ async function setupDatabase() {
     console.log('📋 Creating Route table...');
     await sql`
       CREATE TABLE IF NOT EXISTS "Route" (
-        id SERIAL PRIMARY KEY,
+        id BIGSERIAL PRIMARY KEY,
         route TEXT NOT NULL,
         shift TEXT NOT NULL,
         warehouse TEXT NOT NULL,
@@ -59,7 +59,7 @@ async function setupDatabase() {
     await sql`
       CREATE TABLE IF NOT EXISTS "Location" (
         id SERIAL PRIMARY KEY,
-        "routeId" INTEGER NOT NULL REFERENCES "Route"(id) ON DELETE CASCADE,
+        "routeId" BIGINT NOT NULL REFERENCES "Route"(id) ON DELETE CASCADE,
         location TEXT NOT NULL,
         code TEXT,
         no INTEGER,
