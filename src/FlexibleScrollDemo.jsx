@@ -10,7 +10,6 @@ import { CustomerService } from './service/CustomerService';
 import { ImageLightbox } from './components/ImageLightbox';
 import MiniMap from './components/MiniMap';
 import MarkerColorPicker from './components/MarkerColorPicker';
-import { EditableDescriptionList } from './components/EditableDescriptionList';
 import { TableRowModal } from './components/TableRowModal';
 import { useDeviceDetect, getResponsiveStyles } from './hooks/useDeviceDetect';
 import { usePWAInstall } from './hooks/usePWAInstall';
@@ -1280,7 +1279,16 @@ export default function FlexibleScrollDemo() {
     const handleShowInfo = (rowData, isRoute = false) => {
         // Get the latest data from dialogData if available
         let latestRowData = rowData;
-        if (!isRoute && rowData.id) {
+        
+        if (isRoute && rowData.id) {
+            // For route info, get latest locations from dialogData if this is the current route
+            if (rowData.id === currentRouteId) {
+                latestRowData = {
+                    ...rowData,
+                    locations: dialogData.filter(loc => loc.routeId === currentRouteId)
+                };
+            }
+        } else if (!isRoute && rowData.id) {
             const foundInDialog = dialogData.find(item => item.id === rowData.id);
             if (foundInDialog) {
                 latestRowData = foundInDialog;
