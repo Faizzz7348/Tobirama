@@ -742,6 +742,15 @@ export default function FlexibleScrollDemo() {
         setColumnWidths(widths);
     };
 
+    // Format ID with zero padding (minimum 5 digits)
+    const formatId = (id) => {
+        if (!id || id === 'frozen-row') return id;
+        // For temp IDs (timestamp - very large numbers), show as "NEW"
+        if (id > 1000000000000) return 'NEW';
+        // For regular IDs, pad with zeros to 5 digits
+        return String(id).padStart(5, '0');
+    };
+
     // Compute displayed routes with pinned rows at top
     const displayedRoutes = React.useMemo(() => {
         const pinned = routes.filter(route => pinnedRows.has(route.id));
@@ -4053,9 +4062,9 @@ export default function FlexibleScrollDemo() {
                                 alignHeader="center"
                                 body={(rowData) => {
                                     if (rowData.id === 'frozen-row') return '∞';
-                                    return rowData.id;
+                                    return formatId(rowData.id);
                                 }}
-                                style={{ width: '60px' }}
+                                style={{ width: '80px' }}
                             />
                         )}
                         {visibleColumns.routeId && (
