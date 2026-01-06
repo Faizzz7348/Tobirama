@@ -219,15 +219,14 @@ body.dark .p-datatable .p-datatable-tbody > tr.row-disabled {
   font-weight: 600 !important;
 }
 
-/* New/Modified Row Highlight */
+/* New/Modified Row Highlight - Green Text Only, No Background */
 .p-datatable .p-datatable-tbody > tr.new-row-light {
-  background-color: #fef3c7 !important;
   animation: highlightFadeIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 0 0 2px #fbbf24, 0 4px 12px rgba(251, 191, 36, 0.3);
 }
 
 .p-datatable .p-datatable-tbody > tr.new-row-light > td {
-  background-color: #fef3c7 !important;
+  color: #16a34a !important;
+  font-weight: 700 !important;
   border-bottom: 1px solid transparent !important;
 }
 
@@ -241,13 +240,12 @@ body.dark .p-datatable .p-datatable-tbody > tr.row-disabled {
 }
 
 body.dark .p-datatable .p-datatable-tbody > tr.new-row-dark {
-  background-color: #854d0e !important;
   animation: highlightFadeInDark 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 0 0 2px #ca8a04, 0 4px 12px rgba(202, 138, 4, 0.4);
 }
 
 body.dark .p-datatable .p-datatable-tbody > tr.new-row-dark > td {
-  background-color: #854d0e !important;
+  color: #22c55e !important;
+  font-weight: 700 !important;
   border-bottom: 1px solid transparent !important;
 }
 
@@ -262,36 +260,31 @@ body.dark .p-datatable .p-datatable-tbody > tr.modified-row-dark > td {
 
 @keyframes highlightFadeIn {
   0% {
-    background-color: #fcd34d;
-    transform: scale(1.03) translateY(-4px);
-    box-shadow: 0 0 0 4px #fbbf24, 0 8px 24px rgba(251, 191, 36, 0.5);
-    opacity: 0.8;
+    transform: scale(1.02) translateY(-2px);
+    opacity: 0.7;
   }
   50% {
-    transform: scale(1.015) translateY(-2px);
+    transform: scale(1.015) translateY(-1px);
+    opacity: 0.85;
   }
   100% {
-    background-color: #fef3c7;
     transform: scale(1) translateY(0);
-    box-shadow: 0 0 0 2px #fbbf24, 0 4px 12px rgba(251, 191, 36, 0.3);
     opacity: 1;
   }
 }
 
 @keyframes highlightFadeInDark {
   0% {
-    background-color: #a16207;
-    transform: scale(1.03) translateY(-4px);
-    box-shadow: 0 0 0 4px #ca8a04, 0 8px 24px rgba(202, 138, 4, 0.6);
-    opacity: 0.8;
+    transform: scale(1.02) translateY(-2px);
+    opacity: 0.7;
   }
   50% {
-    transform: scale(1.015) translateY(-2px);
+    transform: scale(1.015) translateY(-1px);
+    opacity: 0.85;
   }
   100% {
-    background-color: #854d0e;
     transform: scale(1) translateY(0);
-    box-shadow: 0 0 0 2px #ca8a04, 0 4px 12px rgba(202, 138, 4, 0.4);
+    opacity: 1;
     opacity: 1;
   }
 }

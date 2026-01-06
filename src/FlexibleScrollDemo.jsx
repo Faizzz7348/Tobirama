@@ -392,6 +392,9 @@ export default function FlexibleScrollDemo() {
             location: true,
             delivery: true,
             kilometer: true,
+            latitude: false,
+            longitude: false,
+            address: false,
             image: true
         };
     });
@@ -399,6 +402,24 @@ export default function FlexibleScrollDemo() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    // Track unsaved changes per route
+    const [routeUnsavedChanges, setRouteUnsavedChanges] = useState(new Map());
+    
+    // Helper function to set unsaved changes for specific route
+    const setRouteHasUnsavedChanges = (routeId, hasChanges) => {
+        setRouteUnsavedChanges(prev => {
+            const newMap = new Map(prev);
+            if (hasChanges) {
+                newMap.set(routeId, true);
+            } else {
+                newMap.delete(routeId);
+            }
+            // Also update global flag if any route has changes
+            const anyUnsaved = Array.from(newMap.values()).some(v => v === true);
+            setHasUnsavedChanges(anyUnsaved);
+            return newMap;
+        });
+    };
     const [originalData, setOriginalData] = useState([]);
     const [originalDialogData, setOriginalDialogData] = useState([]);
     
@@ -1047,7 +1068,7 @@ export default function FlexibleScrollDemo() {
             data.id === rowId ? { ...data, [field]: value } : data
         );
         setDialogData(sortDialogData(updatedData));
-        setHasUnsavedChanges(true);
+        setRouteHasUnsavedChanges(currentRouteId, true);
         
         // Mark row as modified
         setModifiedRows(prev => new Set(prev).add(rowId));
@@ -1074,7 +1095,7 @@ export default function FlexibleScrollDemo() {
             data.id === rowId ? { ...data, powerMode: mode } : data
         );
         setDialogData(sortDialogData(updatedData));
-        setHasUnsavedChanges(true);
+        setRouteHasUnsavedChanges(currentRouteId, true);
         
         // Mark row as modified
         setModifiedRows(prev => new Set(prev).add(rowId));
@@ -1091,7 +1112,7 @@ export default function FlexibleScrollDemo() {
             data.id === colorPickerRowId ? { ...data, markerColor: color } : data
         );
         setDialogData(sortDialogData(updatedData));
-        setHasUnsavedChanges(true);
+        setRouteHasUnsavedChanges(currentRouteId, true);
         
         // Mark row as modified
         setModifiedRows(prev => new Set(prev).add(colorPickerRowId));
@@ -1309,9 +1330,9 @@ export default function FlexibleScrollDemo() {
                 );
                 setDialogData(updatedDialogData);
                 setSelectedRowInfo({ ...selectedRowInfo, description: tempInfoData.description });
+                setRouteHasUnsavedChanges(currentRouteId, true);
             }
             
-            setHasUnsavedChanges(true);
             setInfoModalHasChanges(false);
             setSavingInfo(false);
             
@@ -1440,7 +1461,7 @@ export default function FlexibleScrollDemo() {
             }));
             
             setRoutes(updatedRoutes);
-            setHasUnsavedChanges(true);
+            setRouteHasUnsavedChanges(currentRouteId, true);
             
             // Update selectedRowInfo
             setSelectedRowInfo({
@@ -1508,7 +1529,7 @@ export default function FlexibleScrollDemo() {
                 });
             }
             
-            setHasUnsavedChanges(true);
+            setRouteHasUnsavedChanges(currentRouteId, true);
             setWebsiteLinkDialogVisible(false);
             setWebsiteLinkInput('');
             setCurrentEditingRowId(null);
@@ -1619,7 +1640,7 @@ export default function FlexibleScrollDemo() {
                 });
             }
             
-            setHasUnsavedChanges(true);
+            setRouteHasUnsavedChanges(currentRouteId, true);
             setQrCodeDialogVisible(false);
             setQrCodeImageUrl('');
             setQrCodeDestinationUrl('');
@@ -1739,6 +1760,8 @@ export default function FlexibleScrollDemo() {
             setOriginalData([...sortedRoutes]);
             setOriginalDialogData([...dialogData]);
             setHasUnsavedChanges(false);
+            // Clear all route-specific unsaved changes
+            setRouteUnsavedChanges(new Map());
             setSaving(false);
             
             // Clear modified rows tracking
@@ -1776,6 +1799,8 @@ export default function FlexibleScrollDemo() {
         setRoutes([...originalData]);
         setDialogData([...originalDialogData]);
         setHasUnsavedChanges(false);
+        // Clear all route-specific unsaved changes
+        setRouteUnsavedChanges(new Map());
     };
 
     const handleToggleEditMode = () => {
@@ -1796,10 +1821,10 @@ export default function FlexibleScrollDemo() {
                 setEditMode(false);
                 setModeTransitioning(false);
                 
-                // Reset all edit mode related states
+                // Reset all edit mode related states - but keep newRows
                 setActiveFunction(null);
                 setAddRowMode(false);
-                setNewRows([]);
+                // setNewRows([]); // KEEP new rows visible even in view mode
                 setFunctionDropdownVisible(false);
                 setCustomSortMode(false);
                 setSortOrders({});
@@ -1840,10 +1865,10 @@ export default function FlexibleScrollDemo() {
                 setHasUnsavedChanges(false);
                 setEditMode(true);
                 
-                // Ensure clean state when entering edit mode
+                // Ensure clean state when entering edit mode - but keep existing new rows
                 setActiveFunction(null);
                 setAddRowMode(false);
-                setNewRows([]);
+                // setNewRows([]); // KEEP existing new rows when entering edit mode
                 setFunctionDropdownVisible(false);
                 setCustomSortMode(false);
                 setSortOrders({});
@@ -2072,7 +2097,7 @@ export default function FlexibleScrollDemo() {
         const updatedData = [newRow, ...dialogData];
         setDialogData(updatedData);
         setNewRows([...newRows, tempId]);
-        setHasUnsavedChanges(true);
+        setRouteHasUnsavedChanges(currentRouteId, true);
         
         // Add to changelog
         addChangelogEntry('add', 'location', {
@@ -2100,7 +2125,7 @@ export default function FlexibleScrollDemo() {
             const locationToDelete = deleteTarget.data;
             const updatedData = dialogData.filter(data => data.id !== deleteTarget.id);
             setDialogData(sortDialogData(updatedData));
-            setHasUnsavedChanges(true);
+            setRouteHasUnsavedChanges(currentRouteId, true);
             
             // Add to changelog
             addChangelogEntry('delete', 'location', {
@@ -2379,7 +2404,7 @@ export default function FlexibleScrollDemo() {
         } catch (saveError) {
             console.error('❌ Failed to auto-save images:', saveError);
             setDialogData(sortDialogData(updatedData));
-            setHasUnsavedChanges(true);
+            setRouteHasUnsavedChanges(currentRouteId, true);
             setImageDialogVisible(false);
             alert('⚠️ Images updated but failed to save to database.\nPlease click "Save Changes" button to save manually.');
         }
@@ -2577,12 +2602,19 @@ export default function FlexibleScrollDemo() {
                                 setCurrentRouteName(rowData.route);
                                 CustomerService.getDetailData(rowData.id).then((data) => {
                                     const sortedData = sortDialogData(data);
-                                    setDialogData(sortedData);
-                                    setOriginalDialogData(sortedData);
+                                    
+                                    // Preserve existing new rows (not yet saved)
+                                    const existingNewRows = dialogData.filter(row => newRows.includes(row.id));
+                                    
+                                    // Merge: existing new rows + fresh data from database
+                                    const mergedData = [...existingNewRows, ...sortedData];
+                                    
+                                    setDialogData(mergedData);
+                                    setOriginalDialogData(sortedData); // Keep original as DB data only
                                     setDialogVisible(true);
                                     setIsCustomSorted(false);
                                     // Calculate column widths for new data
-                                    calculateColumnWidths(sortedData);
+                                    calculateColumnWidths(mergedData);
                                 });
                             }} 
                         />
@@ -2676,12 +2708,18 @@ export default function FlexibleScrollDemo() {
                                         }
                                     }
                                     
-                                    setDialogData(sortedData);
-                                    setOriginalDialogData(sortedData);
+                                    // Preserve existing new rows (not yet saved)
+                                    const existingNewRows = dialogData.filter(row => newRows.includes(row.id));
+                                    
+                                    // Merge: existing new rows + fresh data from database
+                                    const mergedData = [...existingNewRows, ...sortedData];
+                                    
+                                    setDialogData(mergedData);
+                                    setOriginalDialogData(sortedData); // Keep original as DB data only
                                     setDialogVisible(true);
                                     setIsCustomSorted(isCustomSortedSaved);
                                     // Calculate column widths for new data
-                                    calculateColumnWidths(sortedData);
+                                    calculateColumnWidths(mergedData);
                                 });
                             }} 
                         />
@@ -3755,8 +3793,8 @@ export default function FlexibleScrollDemo() {
                     transitionOptions={{ timeout: 300 }}
                 >
                     
-                    {/* Unsaved Changes Indicator - Above table */}
-                    {hasUnsavedChanges && editMode && (
+                    {/* Unsaved Changes Indicator - Per Route, Above table */}
+                    {routeUnsavedChanges.has(currentRouteId) && routeUnsavedChanges.get(currentRouteId) && editMode && (
                         <div style={{
                             backgroundColor: isDark ? '#854d0e' : '#fef3c7',
                             border: `2px solid ${isDark ? '#f59e0b' : '#f59e0b'}`,
@@ -3771,7 +3809,7 @@ export default function FlexibleScrollDemo() {
                             fontSize: '0.875rem'
                         }}>
                             <i className="pi pi-exclamation-triangle"></i>
-                            <span>You have unsaved changes</span>
+                            <span>You have unsaved changes in this route</span>
                         </div>
                     )}
                     
@@ -4119,7 +4157,7 @@ export default function FlexibleScrollDemo() {
                                 style={{ width: '100px', minWidth: '100px' }}
                             />
                         )}
-                        {editMode && (
+                        {editMode && visibleColumns.latitude && (
                             <Column 
                                 field="latitude" 
                                 header="Latitude" 
@@ -4146,7 +4184,7 @@ export default function FlexibleScrollDemo() {
                                 style={{ width: '110px', minWidth: '110px' }}
                             />
                         )}
-                        {editMode && (
+                        {editMode && visibleColumns.longitude && (
                             <Column 
                                 field="longitude" 
                                 header="Longitude" 
@@ -4173,7 +4211,7 @@ export default function FlexibleScrollDemo() {
                                 style={{ width: '120px', minWidth: '120px' }}
                             />
                         )}
-                        {editMode && (
+                        {editMode && visibleColumns.address && (
                             <Column 
                                 field="address" 
                                 header="Address" 
@@ -4385,6 +4423,7 @@ export default function FlexibleScrollDemo() {
                         width: deviceInfo.isMobile ? '95vw' : isRouteInfo ? '700px' : '500px',
                         zIndex: 9999
                     }} 
+                    contentStyle={{ height: deviceInfo.isMobile ? '400px' : '500px' }}
                     modal
                     dismissableMask
                     closeOnEscape
@@ -5907,13 +5946,41 @@ export default function FlexibleScrollDemo() {
                     visible={columnModalVisible}
                     onHide={() => setColumnModalVisible(false)}
                     header="Column Visibility"
-                    style={{ width: '400px' }}
+                    style={{ width: deviceInfo.isMobile ? '90vw' : '400px', maxWidth: '400px' }}
+                    contentStyle={{ height: deviceInfo.isMobile ? '400px' : '500px' }}
                     modal
                     dismissableMask
                     transitionOptions={{ timeout: 300 }}
+                    footer={
+                        <div style={{ 
+                            display: 'flex', 
+                            gap: '0.5rem', 
+                            justifyContent: 'flex-end'
+                        }}>
+                            <Button
+                                label="Cancel"
+                                icon="pi pi-times"
+                                severity="secondary"
+                                size="small"
+                                outlined
+                                onClick={() => setColumnModalVisible(false)}
+                            />
+                            <Button
+                                label="Apply"
+                                icon="pi pi-check"
+                                severity="success"
+                                size="small"
+                                onClick={() => {
+                                    setVisibleColumns(tempVisibleColumns);
+                                    localStorage.setItem('columnVisibility', JSON.stringify(tempVisibleColumns));
+                                    setColumnModalVisible(false);
+                                }}
+                            />
+                        </div>
+                    }
                 >
-                    <div style={{ padding: '1rem 0' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div style={{ padding: deviceInfo.isMobile ? '0.5rem 0' : '1rem 0' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: deviceInfo.isMobile ? '0.75rem' : '1rem' }}>
                             {[
                                 { key: 'id', label: 'ID' },
                                 { key: 'routeId', label: 'Route ID' },
@@ -5922,19 +5989,23 @@ export default function FlexibleScrollDemo() {
                                 { key: 'location', label: 'Location' },
                                 { key: 'delivery', label: 'Delivery' },
                                 { key: 'kilometer', label: 'Kilometer' },
+                                { key: 'latitude', label: 'Latitude' },
+                                { key: 'longitude', label: 'Longitude' },
+                                { key: 'address', label: 'Address' },
                                 { key: 'image', label: 'Image' }
                             ].map(col => (
                                 <div key={col.key} style={{
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'space-between',
-                                    padding: '0.75rem',
+                                    padding: deviceInfo.isMobile ? '0.5rem' : '0.75rem',
                                     backgroundColor: isDark ? '#1a1a1a' : '#f9fafb',
                                     borderRadius: '8px',
                                     border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`
                                 }}>
                                     <span style={{
                                         fontWeight: '600',
+                                        fontSize: deviceInfo.isMobile ? '0.875rem' : '1rem',
                                         color: isDark ? '#e5e5e5' : '#000000'
                                     }}>
                                         {col.label}
@@ -5970,36 +6041,6 @@ export default function FlexibleScrollDemo() {
                                     </div>
                                 </div>
                             ))}
-                        </div>
-                        
-                        <div style={{ 
-                            display: 'flex', 
-                            gap: '0.5rem', 
-                            justifyContent: 'flex-end',
-                            marginTop: '1.5rem'
-                        }}>
-                            <Button
-                                label="Cancel"
-                                icon="pi pi-times"
-                                severity="secondary"
-                                size="small"
-                                text
-                                style={{ backgroundColor: 'transparent', border: 'none' }}
-                                onClick={() => setColumnModalVisible(false)}
-                            />
-                            <Button
-                                label="Apply"
-                                icon="pi pi-check"
-                                severity="success"
-                                size="small"
-                                text
-                                style={{ backgroundColor: 'transparent', border: 'none' }}
-                                onClick={() => {
-                                    setVisibleColumns(tempVisibleColumns);
-                                    localStorage.setItem('columnVisibility', JSON.stringify(tempVisibleColumns));
-                                    setColumnModalVisible(false);
-                                }}
-                            />
                         </div>
                     </div>
                 </Dialog>
