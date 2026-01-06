@@ -384,8 +384,6 @@ export default function FlexibleScrollDemo() {
             }
         }
         return {
-            id: false,
-            routeId: false,
             no: true,
             code: true,
             location: true,
@@ -4054,32 +4052,6 @@ export default function FlexibleScrollDemo() {
                                 style={{ width: '60px' }}
                             />
                         )}
-                        {visibleColumns.id && (
-                            <Column 
-                                field="id" 
-                                header="ID" 
-                                align="center" 
-                                alignHeader="center"
-                                body={(rowData) => {
-                                    if (rowData.id === 'frozen-row') return '∞';
-                                    return formatId(rowData.id);
-                                }}
-                                style={{ width: '80px' }}
-                            />
-                        )}
-                        {visibleColumns.routeId && (
-                            <Column 
-                                field="routeId" 
-                                header="Route ID" 
-                                align="center" 
-                                alignHeader="center"
-                                body={(rowData) => {
-                                    if (rowData.id === 'frozen-row') return '-';
-                                    return rowData.routeId || '-';
-                                }}
-                                style={{ width: '70px' }}
-                            />
-                        )}
                         {visibleColumns.no && (
                             <Column 
                                 header="No" 
@@ -6131,8 +6103,6 @@ export default function FlexibleScrollDemo() {
                     <div style={{ padding: deviceInfo.isMobile ? '0.5rem 0' : '1rem 0' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: deviceInfo.isMobile ? '0.75rem' : '1rem' }}>
                             {[
-                                { key: 'id', label: 'ID' },
-                                { key: 'routeId', label: 'Route ID' },
                                 { key: 'no', label: 'No' },
                                 { key: 'code', label: 'Code' },
                                 { key: 'location', label: 'Location' },
