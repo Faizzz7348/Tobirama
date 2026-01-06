@@ -26,7 +26,7 @@ const handlers = {
     const err = checkSqlConnection(res);
     if (err) return err;
 
-    const { id } = req.query;
+    const { id, routeId } = req.query;
 
     // GET single location
     if (id) {
@@ -47,6 +47,26 @@ const handlers = {
         return res.status(200).json(result[0]);
       } catch (error) {
         console.error('Error fetching location:', error);
+        return res.status(500).json({ error: error.message });
+      }
+    }
+
+    // GET locations by routeId
+    if (routeId) {
+      try {
+        const result = await sql(`
+          SELECT id, "routeId", location, code, no, delivery, "powerMode",
+                 latitude, longitude, description, images, address,
+                 "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl",
+                 "createdAt", "updatedAt"
+          FROM "Location"
+          WHERE "routeId" = $1
+          ORDER BY "createdAt" DESC
+        `, [routeId]);
+        
+        return res.status(200).json(result);
+      } catch (error) {
+        console.error('Error fetching locations by routeId:', error);
         return res.status(500).json({ error: error.message });
       }
     }
