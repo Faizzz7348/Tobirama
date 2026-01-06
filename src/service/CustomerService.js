@@ -222,19 +222,33 @@ export const CustomerService = {
             console.log('➕ New routes to create:', newRoutes.length, newRoutes);
             console.log('✏️ Existing routes to update:', updatedRoutes.length, updatedRoutes);
 
-            // Create new routes
-            const createPromises = newRoutes.map(route =>
-                fetch(`${API_BASE_URL}/routes`, {
+            // Create new routes - validate required fields
+            const createPromises = newRoutes.map(route => {
+                // Validate required fields before sending
+                if (!route.route || !route.shift || !route.warehouse) {
+                    console.error('❌ Missing required fields for route:', route);
+                    return Promise.reject(new Error(`Missing required fields: route="${route.route}", shift="${route.shift}", warehouse="${route.warehouse}"`));
+                }
+                
+                return fetch(`${API_BASE_URL}/routes`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        route: route.route, 
-                        shift: route.shift, 
-                        warehouse: route.warehouse,
+                        route: route.route.trim(), 
+                        shift: route.shift.trim(), 
+                        warehouse: route.warehouse.trim(),
                         description: route.description || null
                     }),
                 })
-            );
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => {
+                            throw new Error(`Failed to create route: ${err.error || response.statusText}`);
+                        });
+                    }
+                    return response;
+                });
+            });
 
             // Update existing routes
             let updatePromise = Promise.resolve({ ok: true });
@@ -304,15 +318,34 @@ export const CustomerService = {
             
             console.log(`📊 Split: ${newLocations.length} new, ${existingLocations.length} existing`);
             
-            // Step 1: Create new locations
-            const createPromises = newLocations.map(newLoc =>
-                fetch(`${API_BASE_URL}/locations`, {
+            // Step 1: Create new locations - validate required fields
+            const createPromises = newLocations.map(newLoc => {
+                // Validate required fields
+                if (!newLoc.routeId || !newLoc.location) {
+                    console.error('❌ Missing required fields for location:', newLoc);
+                    return Promise.reject(new Error(`Missing required fields: routeId="${newLoc.routeId}", location="${newLoc.location}"`));
+                }
+                
+                // Validate routeId is not a temp ID
+                if (newLoc.routeId > 1000000000000) {
+                    console.error('❌ Invalid routeId (temp ID):', newLoc.routeId);
+                    return Promise.reject(new Error(`Cannot save location with unsaved route. Please save the route first.`));
+                }
+                
+                return fetch(`${API_BASE_URL}/locations`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(newLoc),
                 })
-                .then(r => r.json())
-            );
+                .then(r => {
+                    if (!r.ok) {
+                        return r.json().then(err => {
+                            throw new Error(`Failed to create location: ${err.error || r.statusText}`);
+                        });
+                    }
+                    return r.json();
+                });
+            });
             
             const createdResults = await Promise.all(createPromises);
             const createdCount = createdResults.filter(r => r && r.id).length;
