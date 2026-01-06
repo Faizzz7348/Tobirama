@@ -9,6 +9,34 @@ body {
   color: #000000;
   transition: background-color 0.3s ease, color 0.3s ease;
   --text-color: #555555;
+  overflow-y: scroll; /* Prevent layout shift when modal opens */
+  opacity: 0;
+  animation: pageFadeIn 0.5s ease-out forwards;
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Root container fade in */
+#root {
+  animation: rootFadeIn 0.6s ease-out;
+}
+
+@keyframes rootFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Dark mode */
@@ -18,7 +46,7 @@ body.dark {
   --text-color: #e5e5e5;
 }
 
-/* Smooth transitions */
+/* Smooth transitions - excluding transform to prevent glitches */
 * {
   transition: background-color 0.3s ease, 
               color 0.3s ease,
@@ -29,17 +57,17 @@ body.dark {
   padding: 2rem;
   max-width: 1400px;
   margin: 0 auto;
-  animation: fadeIn 0.5s ease-out;
+  animation: cardFadeIn 0.7s ease-out;
 }
 
-@keyframes fadeIn {
+@keyframes cardFadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(20px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -76,9 +104,21 @@ body.dark {
   background-color: #ffffff;
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border: 0 !important;
   overflow: hidden;
   transition: box-shadow 0.3s ease;
+  animation: tableFadeIn 0.8s ease-out 0.2s both;
+}
+
+@keyframes tableFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .p-datatable:hover {
@@ -88,15 +128,20 @@ body.dark {
 body.dark .p-datatable {
   background-color: #0f0f0f;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 0 !important;
 }
 
 body.dark .p-datatable:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
+/* Prevent table from jumping when dialog opens */
+body.p-overflow-hidden {
+  padding-right: 0 !important;
+}
+
 .p-datatable .p-datatable-wrapper {
-  border: none;
+  border: 0 !important;
   border-radius: 16px;
   overflow: hidden;
 }
@@ -104,6 +149,24 @@ body.dark .p-datatable:hover {
 .p-datatable table {
   border-collapse: separate;
   border-spacing: 0;
+}
+
+/* Global border removal for all table elements */
+.p-datatable,
+.p-datatable * {
+  border-collapse: separate !important;
+}
+
+.p-datatable table,
+.p-datatable table *,
+.p-datatable thead,
+.p-datatable thead *,
+.p-datatable tbody,
+.p-datatable tbody *,
+.p-datatable tr,
+.p-datatable th,
+.p-datatable td {
+  box-sizing: border-box;
 }
 
 /* Table Header */
@@ -114,11 +177,13 @@ body.dark .p-datatable:hover {
   font-weight: 600;
   font-size: 13px;
   padding: 1rem;
-  border: none !important;
-  border-top: none !important;
-  border-bottom: none !important;
-  border-left: none !important;
-  border-right: none !important;
+  border: 0 !important;
+  border-top: 0 !important;
+  border-bottom: 0 !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-width: 0 !important;
+  box-shadow: none !important;
   letter-spacing: 0.5px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -141,7 +206,31 @@ body.dark .p-datatable .p-datatable-thead > tr > th {
   border: 0 !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
+  animation: rowFadeIn 0.5s ease-out backwards;
 }
+
+@keyframes rowFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Stagger row animations */
+.p-datatable .p-datatable-tbody > tr:nth-child(1) { animation-delay: 0.05s; }
+.p-datatable .p-datatable-tbody > tr:nth-child(2) { animation-delay: 0.1s; }
+.p-datatable .p-datatable-tbody > tr:nth-child(3) { animation-delay: 0.15s; }
+.p-datatable .p-datatable-tbody > tr:nth-child(4) { animation-delay: 0.2s; }
+.p-datatable .p-datatable-tbody > tr:nth-child(5) { animation-delay: 0.25s; }
+.p-datatable .p-datatable-tbody > tr:nth-child(6) { animation-delay: 0.3s; }
+.p-datatable .p-datatable-tbody > tr:nth-child(7) { animation-delay: 0.35s; }
+.p-datatable .p-datatable-tbody > tr:nth-child(8) { animation-delay: 0.4s; }
+.p-datatable .p-datatable-tbody > tr:nth-child(9) { animation-delay: 0.45s; }
+.p-datatable .p-datatable-tbody > tr:nth-child(10) { animation-delay: 0.5s; }
 
 .p-datatable .p-datatable-tbody > tr:hover {
   transform: translateY(-1px);
@@ -160,7 +249,12 @@ body.dark .p-datatable .p-datatable-tbody > tr:hover {
   font-weight: 600;
   padding: 0.75rem;
   border: 0 !important;
-  border-bottom: 1px solid transparent !important;
+  border-top: 0 !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-bottom: 0 !important;
+  border-width: 0 !important;
+  box-shadow: none !important;
   transition: width 0.3s ease, background-color 0.3s ease;
 }
 
@@ -171,11 +265,18 @@ body.dark .p-datatable .p-datatable-tbody > tr:hover {
 body.dark .p-datatable .p-datatable-tbody > tr > td {
   background-color: #0f0f0f;
   color: #e5e5e5;
-  border-bottom: 1px solid transparent !important;
+  border: 0 !important;
+  border-top: 0 !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-bottom: 0 !important;
+  border-width: 0 !important;
+  box-shadow: none !important;
 }
 
 body.dark .p-datatable .p-datatable-tbody > tr:last-child > td {
-  border-bottom: none !important;
+  border: 0 !important;
+  border-bottom: 0 !important;
 }
 
 .p-datatable .p-datatable-tbody > tr:hover {
@@ -296,31 +397,31 @@ body.dark .p-datatable .p-datatable-tbody > tr.modified-row-dark > td {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 8px 20px rgba(0, 0, 0, 0.08);
   border: 1px solid rgba(0, 0, 0, 0.08);
   overflow: hidden;
-  animation: dialogFadeIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: dialogFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   backdrop-filter: blur(10px);
+  will-change: transform, opacity;
+  transform: translateZ(0);
 }
 
 /* Dialog Fade In Animation */
 @keyframes dialogFadeIn {
   0% {
     opacity: 0;
-    transform: scale(0.85) translateY(-40px);
-  }
-  60% {
-    opacity: 1;
-    transform: scale(1.03) translateY(0);
+    transform: scale(0.96) translateY(-15px) translateZ(0);
   }
   100% {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: scale(1) translateY(0) translateZ(0);
   }
 }
 
 /* Dialog Mask (backdrop) Fade */
 .p-dialog-mask {
-  animation: maskFadeIn 0.4s ease-out;
+  animation: maskFadeIn 0.25s ease-out;
   background-color: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(8px);
+  will-change: opacity;
+  transform: translateZ(0);
 }
 
 body.dark .p-dialog-mask {
@@ -331,11 +432,9 @@ body.dark .p-dialog-mask {
 @keyframes maskFadeIn {
   from {
     opacity: 0;
-    backdrop-filter: blur(0px);
   }
   to {
     opacity: 1;
-    backdrop-filter: blur(8px);
   }
 }
 
@@ -343,7 +442,9 @@ body.dark .p-dialog {
   background-color: #1e293b;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 8px 20px rgba(0, 0, 0, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  animation: dialogFadeIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: dialogFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+  transform: translateZ(0);
 }
 
 /* Dialog transition for smooth closing */
@@ -383,19 +484,30 @@ body.dark .p-dialog .p-dialog-content {
   color: #f1f5f9;
 }
 
+/* Ensure DataTable inside Dialog has no borders */
+.p-dialog .p-datatable,
+.p-dialog .p-datatable *,
+.p-dialog .p-datatable table,
+.p-dialog .p-datatable thead th,
+.p-dialog .p-datatable tbody td {
+  border: 0 !important;
+  border-width: 0 !important;
+  box-shadow: none !important;
+}
+
 /* Dialog Content Transitions */
 .p-dialog .p-dialog-content {
-  animation: contentFadeIn 0.3s ease-out 0.1s backwards;
+  animation: contentFadeIn 0.2s ease-out backwards;
+  will-change: opacity;
+  transform: translateZ(0);
 }
 
 @keyframes contentFadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -448,10 +560,11 @@ body.dark .p-dialog .p-dialog-header-icon:hover {
 /* Button Styling */
 .p-button {
   border-radius: 10px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   font-weight: 600;
   letter-spacing: 0.3px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  will-change: transform;
 }
 
 .p-button:hover {

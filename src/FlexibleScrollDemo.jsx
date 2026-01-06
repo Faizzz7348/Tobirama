@@ -4409,18 +4409,33 @@ export default function FlexibleScrollDemo() {
                         <div style={{ 
                             textAlign: 'center', 
                             fontSize: deviceInfo.isMobile ? '11px' : '12px',
-                            padding: '8px 0'
+                            padding: '8px 0',
+                            lineHeight: '1.6'
                         }}>
                             {selectedRowInfo && (
                                 isRouteInfo 
-                                    ? `Route ${selectedRowInfo.route} - ${selectedRowInfo.locations?.length || 0} Locations`
+                                    ? (
+                                        <>
+                                            <div style={{ fontWeight: '700', fontSize: '13px' }}>
+                                                Route {selectedRowInfo.route}
+                                            </div>
+                                            <div style={{ 
+                                                fontSize: '11px', 
+                                                color: isDark ? '#9ca3af' : '#6b7280',
+                                                marginTop: '4px',
+                                                fontWeight: '600'
+                                            }}>
+                                                {selectedRowInfo.warehouse || 'N/A'}
+                                            </div>
+                                        </>
+                                    )
                                     : `${selectedRowInfo.code} - ${selectedRowInfo.location}`
                             )}
                         </div>
                     }
                     visible={infoDialogVisible} 
                     style={{ 
-                        width: deviceInfo.isMobile ? '95vw' : isRouteInfo ? '700px' : '500px',
+                        width: deviceInfo.isMobile ? '95vw' : isRouteInfo ? '650px' : '450px',
                         zIndex: 9999
                     }} 
                     contentStyle={{ height: deviceInfo.isMobile ? '400px' : '500px' }}
@@ -4508,6 +4523,92 @@ export default function FlexibleScrollDemo() {
                                 locations={isRouteInfo ? selectedRowInfo.locations : []}
                                 style={{ marginBottom: '20px' }}
                             />
+                            
+                            {/* General Information Section - For Route Only */}
+                            {isRouteInfo && selectedRowInfo.locations && (
+                                <div style={{ 
+                                    backgroundColor: isDark ? 'transparent' : '#ffffff',
+                                    borderRadius: '8px',
+                                    border: isDark ? '1px solid #374151' : '1px solid #e9ecef',
+                                    margin: '15px',
+                                    marginTop: '0'
+                                }}>
+                                    <div style={{
+                                        padding: '10px 15px',
+                                        borderBottom: isDark ? '1px solid #374151' : '1px solid #e9ecef',
+                                        backgroundColor: isDark ? 'transparent' : '#f8f9fa'
+                                    }}>
+                                        <strong style={{ fontSize: '12px', color: isDark ? '#e5e5e5' : '#495057', display: 'block', textAlign: 'center' }}>
+                                            General Information
+                                        </strong>
+                                    </div>
+                                    <div style={{ padding: '15px' }}>
+                                        <div style={{ 
+                                            display: 'grid',
+                                            gridTemplateColumns: '1fr 1fr',
+                                            gap: '12px',
+                                            fontSize: '12px'
+                                        }}>
+                                            <div style={{ 
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
+                                                padding: '8px 12px',
+                                                backgroundColor: isDark ? '#1e293b' : '#f8f9fa',
+                                                borderRadius: '6px',
+                                                border: isDark ? '1px solid #334155' : '1px solid #e9ecef'
+                                            }}>
+                                                <span style={{ color: isDark ? '#9ca3af' : '#6b7280', fontWeight: '500' }}>Daily:</span>
+                                                <span style={{ color: isDark ? '#e5e5e5' : '#111827', fontWeight: '700' }}>
+                                                    {selectedRowInfo.locations.filter(loc => loc.powerMode === 'Daily').length}
+                                                </span>
+                                            </div>
+                                            <div style={{ 
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
+                                                padding: '8px 12px',
+                                                backgroundColor: isDark ? '#1e293b' : '#f8f9fa',
+                                                borderRadius: '6px',
+                                                border: isDark ? '1px solid #334155' : '1px solid #e9ecef'
+                                            }}>
+                                                <span style={{ color: isDark ? '#9ca3af' : '#6b7280', fontWeight: '500' }}>Alt 1:</span>
+                                                <span style={{ color: isDark ? '#e5e5e5' : '#111827', fontWeight: '700' }}>
+                                                    {selectedRowInfo.locations.filter(loc => loc.powerMode === 'Alt 1').length}
+                                                </span>
+                                            </div>
+                                            <div style={{ 
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
+                                                padding: '8px 12px',
+                                                backgroundColor: isDark ? '#1e293b' : '#f8f9fa',
+                                                borderRadius: '6px',
+                                                border: isDark ? '1px solid #334155' : '1px solid #e9ecef'
+                                            }}>
+                                                <span style={{ color: isDark ? '#9ca3af' : '#6b7280', fontWeight: '500' }}>Alt 2:</span>
+                                                <span style={{ color: isDark ? '#e5e5e5' : '#111827', fontWeight: '700' }}>
+                                                    {selectedRowInfo.locations.filter(loc => loc.powerMode === 'Alt 2').length}
+                                                </span>
+                                            </div>
+                                            <div style={{ 
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
+                                                padding: '8px 12px',
+                                                backgroundColor: isDark ? '#1e293b' : '#f8f9fa',
+                                                borderRadius: '6px',
+                                                border: isDark ? '1px solid #334155' : '1px solid #e9ecef'
+                                            }}>
+                                                <span style={{ color: isDark ? '#9ca3af' : '#6b7280', fontWeight: '500' }}>Weekday:</span>
+                                                <span style={{ color: isDark ? '#e5e5e5' : '#111827', fontWeight: '700' }}>
+                                                    {selectedRowInfo.locations.filter(loc => loc.powerMode === 'Weekday').length}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                             
                             {/* Description Section */}
                             {!isRouteInfo && (
