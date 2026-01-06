@@ -2090,6 +2090,14 @@ export default function FlexibleScrollDemo() {
     const handleAddDialogRow = () => {
         const tempId = Date.now(); // Use numeric timestamp for new rows (must be > 1000000000000)
         const highestNo = dialogData.length > 0 ? Math.max(...dialogData.map(d => typeof d.no === 'number' ? d.no : 0)) : 0;
+        
+        // Debug: Check current route context
+        console.log('➕ Adding new location row:', {
+            currentRouteId,
+            currentRouteName,
+            tempId
+        });
+        
         const newRow = {
             id: tempId,
             no: highestNo + 1,
@@ -2098,7 +2106,7 @@ export default function FlexibleScrollDemo() {
             delivery: 'Daily',
             images: [],
             powerMode: 'Daily',
-            routeId: currentRouteId,
+            routeId: currentRouteId, // Use the current route ID
             isNew: true
         };
         // Add new row at the top
@@ -2606,18 +2614,27 @@ export default function FlexibleScrollDemo() {
                             tooltipOptions={{ position: 'top' }}
                             text
                             onClick={() => {
-                                // Check if switching to different route
-                                const isSameRoute = currentRouteId === rowData.id;
+                                // Store previous route ID before changing
+                                const previousRouteId = currentRouteId;
+                                const isSameRoute = previousRouteId === rowData.id;
                                 
+                                // Set new route context FIRST
                                 setCurrentRouteId(rowData.id);
                                 setCurrentRouteName(rowData.route);
+                                
                                 CustomerService.getDetailData(rowData.id).then((data) => {
                                     const sortedData = sortDialogData(data);
                                     
-                                    // Only preserve new rows from the SAME route to avoid mixing route data
-                                    const existingNewRows = isSameRoute 
-                                        ? dialogData.filter(row => newRows.includes(row.id))
-                                        : [];
+                                    // Only preserve new rows from the SAME route
+                                    let existingNewRows = [];
+                                    if (isSameRoute) {
+                                        existingNewRows = dialogData.filter(row => newRows.includes(row.id));
+                                        // Update routeId for all existing new rows to current route
+                                        existingNewRows = existingNewRows.map(row => ({
+                                            ...row,
+                                            routeId: rowData.id
+                                        }));
+                                    }
                                     
                                     // If switching to different route, clear new rows state
                                     if (!isSameRoute) {
