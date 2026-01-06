@@ -82,9 +82,21 @@ const handlers = {
 
     const { route, shift, warehouse, description } = req.body;
 
-    if (!route || !shift || !warehouse) {
+    // Log request for debugging
+    console.log('POST /api/routes - Request body:', req.body);
+
+    // Check required fields (handle empty strings too)
+    const missingFields = [];
+    if (!route || route.trim() === '') missingFields.push('route');
+    if (!shift || shift.trim() === '') missingFields.push('shift');
+    if (!warehouse || warehouse.trim() === '') missingFields.push('warehouse');
+
+    if (missingFields.length > 0) {
       return res.status(400).json({ 
-        error: 'route, shift, and warehouse are required' 
+        error: 'Missing required fields',
+        required: ['route', 'shift', 'warehouse'],
+        missing: missingFields,
+        received: req.body
       });
     }
 
