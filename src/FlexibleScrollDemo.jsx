@@ -1433,6 +1433,65 @@ export default function FlexibleScrollDemo() {
         URL.revokeObjectURL(url);
     };
 
+    // Helper function to show success toast notifications
+    const showSuccessToast = (message) => {
+        // Add animation styles if not already present
+        if (!document.getElementById('toast-animations')) {
+            const style = document.createElement('style');
+            style.id = 'toast-animations';
+            style.textContent = `
+                @keyframes toastSlideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes toastSlideOut {
+                    from { transform: translateX(0); opacity: 1; }
+                    to { transform: translateX(100%); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        const toastEl = document.createElement('div');
+        toastEl.innerHTML = `
+            <div style="
+                position: fixed;
+                top: 80px;
+                right: 20px;
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                color: white;
+                padding: 14px 22px;
+                border-radius: 10px;
+                box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+                z-index: 10000;
+                font-size: 14px;
+                font-weight: 600;
+                animation: toastSlideIn 0.3s ease-out;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            ">
+                <i class="pi pi-check-circle" style="font-size: 1.3rem;"></i>
+                <span>${message}</span>
+            </div>
+        `;
+        document.body.appendChild(toastEl);
+        
+        // Auto remove after 3.5 seconds
+        setTimeout(() => {
+            const toast = toastEl.firstElementChild;
+            if (toast) {
+                toast.style.animation = 'toastSlideOut 0.3s ease-in';
+                setTimeout(() => {
+                    if (toastEl.parentNode) {
+                        document.body.removeChild(toastEl);
+                    }
+                }, 300);
+            }
+        }, 3500);
+    };
+
     const handleShowInfo = (rowData, isRoute = false) => {
         // Get the latest data from dialogData if available
         let latestRowData = rowData;
@@ -1610,43 +1669,7 @@ export default function FlexibleScrollDemo() {
             setInfoEditMode(false);
             
             // Show success toast
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes slideIn {
-                    from { transform: translateX(100%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
-                }
-                @keyframes slideOut {
-                    from { transform: translateX(0); opacity: 1; }
-                    to { transform: translateX(100%); opacity: 0; }
-                }
-            `;
-            document.head.appendChild(style);
-            
-            const toastEl = document.createElement('div');
-            toastEl.innerHTML = `
-                <div style="
-                    position: fixed;
-                    top: 80px;
-                    right: 20px;
-                    background: #10b981;
-                    color: white;
-                    padding: 12px 20px;
-                    border-radius: 8px;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                    z-index: 10000;
-                    font-size: 14px;
-                    font-weight: 600;
-                    animation: slideIn 0.3s ease-out;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                ">
-                    <i class="pi pi-check-circle" style="font-size: 1.2rem;"></i>
-                    <span>✅ Location info saved successfully!</span>
-                </div>
-            `;
-            document.body.appendChild(toastEl);
+            showSuccessToast('📍 Location info updated! Remember to save changes.');
             
             setTimeout(() => {
                 toastEl.style.animation = 'slideOut 0.3s ease-out';
@@ -1715,7 +1738,8 @@ export default function FlexibleScrollDemo() {
             setWebsiteLinkInput('');
             setCurrentEditingRowId(null);
             
-            // Website link updated in state
+            // Show success toast
+            showSuccessToast('🔗 Website link updated! Remember to save changes.');
         } catch (error) {
             console.error('❌ Error saving website link:', error);
             alert('Error saving website link: ' + error.message);
@@ -1828,9 +1852,9 @@ export default function FlexibleScrollDemo() {
             setCurrentEditingRowId(null);
             
             const actionMessage = (!qrCodeImageUrl && !qrCodeDestinationUrl) 
-                ? '✅ QR code removed successfully' 
-                : '✅ QR code updated successfully';
-            // QR code saved
+                ? '📱 QR code removed! Remember to save changes.'
+                : '📱 QR code updated! Remember to save changes.';
+            showSuccessToast(actionMessage);
         } catch (error) {
             console.error('❌ Error saving QR code:', error);
             alert('Error saving QR code: ' + error.message);
@@ -4806,23 +4830,48 @@ export default function FlexibleScrollDemo() {
                             lineHeight: '1.6'
                         }}>
                             {selectedRowInfo && (
-                                isRouteInfo 
-                                    ? (
-                                        <>
-                                            <div style={{ fontWeight: '700', fontSize: '13px' }}>
-                                                Route {selectedRowInfo.route}
-                                            </div>
-                                            <div style={{ 
-                                                fontSize: '11px', 
-                                                color: isDark ? '#9ca3af' : '#6b7280',
-                                                marginTop: '4px',
-                                                fontWeight: '600'
-                                            }}>
-                                                {selectedRowInfo.warehouse || 'N/A'}
-                                            </div>
-                                        </>
-                                    )
-                                    : `${selectedRowInfo.code} - ${selectedRowInfo.location}`
+                                <>
+                                    {isRouteInfo 
+                                        ? (
+                                            <>
+                                                <div style={{ fontWeight: '700', fontSize: '13px' }}>
+                                                    Route {selectedRowInfo.route}
+                                                </div>
+                                                <div style={{ 
+                                                    fontSize: '11px', 
+                                                    color: isDark ? '#9ca3af' : '#6b7280',
+                                                    marginTop: '4px',
+                                                    fontWeight: '600'
+                                                }}>
+                                                    {selectedRowInfo.warehouse || 'N/A'}
+                                                </div>
+                                            </>
+                                        )
+                                        : (
+                                            <>
+                                                <div>{selectedRowInfo.code} - {selectedRowInfo.location}</div>
+                                                {routeUnsavedChanges.get(currentRouteId) && (
+                                                    <div style={{
+                                                        marginTop: '6px',
+                                                        padding: '4px 10px',
+                                                        backgroundColor: isDark ? 'rgba(251, 191, 36, 0.15)' : '#fef3c7',
+                                                        border: `1px solid ${isDark ? '#f59e0b' : '#fbbf24'}`,
+                                                        borderRadius: '6px',
+                                                        fontSize: '10px',
+                                                        fontWeight: '600',
+                                                        color: isDark ? '#fbbf24' : '#92400e',
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '4px'
+                                                    }}>
+                                                        <i className="pi pi-exclamation-triangle" style={{ fontSize: '10px' }}></i>
+                                                        Unsaved Changes
+                                                    </div>
+                                                )}
+                                            </>
+                                        )
+                                    }
+                                </>
                             )}
                         </div>
                     }
