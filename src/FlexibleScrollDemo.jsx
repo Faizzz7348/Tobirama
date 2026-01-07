@@ -5286,51 +5286,61 @@ export default function FlexibleScrollDemo() {
                                         />
                                         
                                         {/* QR Code Button - [Q] */}
-                                        <button
-                                            title={editMode 
-                                                ? (selectedRowInfo?.qrCodeImageUrl ? "Edit QR Code [Q]" : "Add QR Code [Q]")
-                                                : "Scan QR Code [Q]"}
-                                            style={{
-                                                width: '50px',
-                                                height: '50px',
-                                                borderRadius: '6px',
-                                                border: 'none',
-                                                padding: '3px',
-                                                cursor: 'pointer',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                backgroundColor: 'transparent',
-                                                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                                                boxSizing: 'border-box'
-                                            }}
-                                            onMouseEnter={(e) => {
-                                                e.currentTarget.style.transform = 'scale(1.1)';
-                                                e.currentTarget.style.boxShadow = isDark ? '0 4px 8px rgba(255, 255, 255, 0.3)' : '0 4px 8px rgba(0, 0, 0, 0.3)';
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                e.currentTarget.style.transform = 'scale(1)';
-                                                e.currentTarget.style.boxShadow = 'none';
-                                            }}
-                                            onClick={() => {
-                                                setCurrentEditingRowId(selectedRowInfo.id);
-                                                setQrCodeImageUrl(selectedRowInfo.qrCodeImageUrl || '');
-                                                setQrCodeDestinationUrl(selectedRowInfo.qrCodeDestinationUrl || '');
-                                                setQrCodeDialogVisible(true);
-                                            }}
-                                        >
-                                            <img 
-                                                src="/QRcodewoi.png" 
-                                                alt="QR Code" 
-                                                style={{ 
-                                                    width: '100%', 
-                                                    height: '100%',
-                                                    objectFit: 'contain',
-                                                    filter: isDark ? 'brightness(0) saturate(100%) invert(100%)' : 'brightness(0) saturate(100%)'
-                                                }} 
-                                            />
-                                        </button>
-                                        
+                        {/* Only show in view mode if QR code exists, or always show in edit mode */}
+                        {(editMode || selectedRowInfo?.qrCodeImageUrl) && (
+                            <button
+                                title={editMode 
+                                    ? (selectedRowInfo?.qrCodeImageUrl ? "Edit QR Code [Q]" : "Add QR Code [Q]")
+                                    : "Scan QR Code [Q]"}
+                                style={{
+                                    width: '50px',
+                                    height: '50px',
+                                    borderRadius: '6px',
+                                    border: 'none',
+                                    padding: '3px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: 'transparent',
+                                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                                    boxSizing: 'border-box'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.transform = 'scale(1.1)';
+                                    e.currentTarget.style.boxShadow = isDark ? '0 4px 8px rgba(255, 255, 255, 0.3)' : '0 4px 8px rgba(0, 0, 0, 0.3)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                    e.currentTarget.style.boxShadow = 'none';
+                                }}
+                                onClick={() => {
+                                    if (editMode) {
+                                        // Edit mode: Open dialog to edit QR code
+                                        setCurrentEditingRowId(selectedRowInfo.id);
+                                        setQrCodeImageUrl(selectedRowInfo.qrCodeImageUrl || '');
+                                        setQrCodeDestinationUrl(selectedRowInfo.qrCodeDestinationUrl || '');
+                                        setQrCodeDialogVisible(true);
+                                    } else {
+                                        // View mode: Auto-scan QR code and open URL (like Route.git)
+                                        if (selectedRowInfo.qrCodeImageUrl) {
+                                            handleScanQrCode(selectedRowInfo.qrCodeImageUrl, selectedRowInfo.qrCodeDestinationUrl);
+                                        }
+                                    }
+                                }}
+                            >
+                                <img 
+                                    src="/QRcodewoi.png" 
+                                    alt="QR Code" 
+                                    style={{ 
+                                        width: '100%', 
+                                        height: '100%',
+                                        objectFit: 'contain',
+                                        filter: isDark ? 'brightness(0) saturate(100%) invert(100%)' : 'brightness(0) saturate(100%)'
+                                    }} 
+                                />
+                            </button>
+                        )}
                                         {/* Phone/Call Button - [P] */}
                                         {selectedRowInfo?.phone && (
                                             <Button
