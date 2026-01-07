@@ -2023,14 +2023,35 @@ export default function FlexibleScrollDemo() {
             setRoutes(sortedRoutes);
             setOriginalData([...sortedRoutes]);
             
-            // 🔄 FIX: Update dialogData with fresh data from database to ensure QR code and other fields are synced
-            // Filter locations for current route if we have one open
-            const freshDialogData = currentRouteId 
-                ? allLocations.filter(loc => loc.routeId === currentRouteId)
-                : allLocations;
-            
-            setDialogData(freshDialogData);
-            setOriginalDialogData([...freshDialogData]);
+            // 🔄 SMART SYNC: Update dialogData with fresh data, but handle temp ID replacement
+            if (currentRouteId) {
+                const freshLocationsForRoute = allLocations.filter(loc => loc.routeId === currentRouteId);
+                
+                // Map old IDs to new IDs (for temp IDs that got real IDs after save)
+                const idMapping = new Map();
+                
+                // Update dialogData: Replace temp IDs with real IDs, and use fresh data
+                const syncedDialogData = freshLocationsForRoute.map(freshLoc => {
+                    // Try to find matching location in current dialogData by temp ID or matching fields
+                    const oldLoc = dialogData.find(loc => 
+                        loc.id === freshLoc.id || // Same ID
+                        (loc.id > 1000000000000 && loc.location === freshLoc.location && !idMapping.has(loc.id)) // Temp ID match
+                    );
+                    
+                    if (oldLoc && oldLoc.id > 1000000000000) {
+                        idMapping.set(oldLoc.id, freshLoc.id);
+                    }
+                    
+                    // Use fresh data from database (which includes all saved changes)
+                    return freshLoc;
+                });
+                
+                setDialogData(syncedDialogData);
+                setOriginalDialogData([...syncedDialogData]);
+            } else {
+                // No current route open, keep original behavior
+                setOriginalDialogData([...dialogData]);
+            }
             
             setHasUnsavedChanges(false);
             // Clear all route-specific unsaved changes
