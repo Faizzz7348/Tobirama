@@ -1283,6 +1283,20 @@ export default function FlexibleScrollDemo() {
                 newValue: color
             });
         }
+        
+        // Show success toast
+        showSuccessToast('🎨 Marker color updated!');
+        
+        // Show reminder toast after a short delay
+        setTimeout(() => {
+            toast.current.show({
+                severity: 'warn',
+                summary: '💾 Remember to Save',
+                detail: 'Click the Save button in the menu to save your marker color changes permanently.',
+                life: 5000,
+                sticky: false
+            });
+        }, 500);
     };
     
     const openColorPicker = (rowId, locationName) => {
@@ -1561,43 +1575,18 @@ export default function FlexibleScrollDemo() {
             setSavingInfo(false);
             
             // Show success toast
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes slideIn {
-                    from { transform: translateX(100%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
-                }
-                @keyframes slideOut {
-                    from { transform: translateX(0); opacity: 1; }
-                    to { transform: translateX(100%); opacity: 0; }
-                }
-            `;
-            document.head.appendChild(style);
+            showSuccessToast(isRouteInfo ? '📝 Route description updated!' : '📝 Location description updated!');
             
-            const toastEl = document.createElement('div');
-            toastEl.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: #10b981;
-                color: white;
-                padding: 12px 20px;
-                border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                z-index: 9999;
-                font-size: 14px;
-                font-weight: 600;
-                animation: slideIn 0.3s ease-out;
-            `;
-            toastEl.innerHTML = `<i class="pi pi-check-circle" style="margin-right: 8px;"></i>Info saved! Click "Save Changes" in toolbar to persist.`;
-            document.body.appendChild(toastEl);
+            // Show reminder toast after a short delay
             setTimeout(() => {
-                toastEl.style.animation = 'slideOut 0.3s ease-out';
-                setTimeout(() => {
-                    document.body.removeChild(toastEl);
-                    document.head.removeChild(style);
-                }, 300);
-            }, 2000);
+                toast.current.show({
+                    severity: 'warn',
+                    summary: '💾 Remember to Save',
+                    detail: 'Click the Save button in the menu to save your description changes permanently.',
+                    life: 5000,
+                    sticky: false
+                });
+            }, 500);
             
         } catch (error) {
             console.error('❌ Error saving info modal:', error);
@@ -1669,15 +1658,18 @@ export default function FlexibleScrollDemo() {
             setInfoEditMode(false);
             
             // Show success toast
-            showSuccessToast('📍 Location info updated! Remember to save changes.');
+            showSuccessToast('📍 Location info updated!');
             
+            // Show reminder toast after a short delay
             setTimeout(() => {
-                toastEl.style.animation = 'slideOut 0.3s ease-out';
-                setTimeout(() => {
-                    document.body.removeChild(toastEl);
-                    document.head.removeChild(style);
-                }, 300);
-            }, 2000);
+                toast.current.show({
+                    severity: 'warn',
+                    summary: '💾 Remember to Save',
+                    detail: 'Click the Save button in the menu to save your location changes permanently.',
+                    life: 5000,
+                    sticky: false
+                });
+            }, 500);
             
         } catch (error) {
             console.error('❌ Error saving location info:', error);
@@ -1739,7 +1731,18 @@ export default function FlexibleScrollDemo() {
             setCurrentEditingRowId(null);
             
             // Show success toast
-            showSuccessToast('🔗 Website link updated! Remember to save changes.');
+            showSuccessToast('🔗 Website link updated!');
+            
+            // Show reminder toast after a short delay
+            setTimeout(() => {
+                toast.current.show({
+                    severity: 'warn',
+                    summary: '💾 Remember to Save',
+                    detail: 'Click the Save button in the menu to save your website link permanently.',
+                    life: 5000,
+                    sticky: false
+                });
+            }, 500);
         } catch (error) {
             console.error('❌ Error saving website link:', error);
             alert('Error saving website link: ' + error.message);
@@ -1852,9 +1855,20 @@ export default function FlexibleScrollDemo() {
             setCurrentEditingRowId(null);
             
             const actionMessage = (!qrCodeImageUrl && !qrCodeDestinationUrl) 
-                ? '📱 QR code removed! Remember to save changes.'
-                : '📱 QR code updated! Remember to save changes.';
+                ? '📱 QR code removed!'
+                : '📱 QR code updated!';
             showSuccessToast(actionMessage);
+            
+            // Show reminder toast after a short delay
+            setTimeout(() => {
+                toast.current.show({
+                    severity: 'warn',
+                    summary: '💾 Remember to Save',
+                    detail: 'Click the Save button in the menu to save your QR code changes permanently.',
+                    life: 5000,
+                    sticky: false
+                });
+            }, 500);
         } catch (error) {
             console.error('❌ Error saving QR code:', error);
             alert('Error saving QR code: ' + error.message);
@@ -2801,7 +2815,15 @@ export default function FlexibleScrollDemo() {
             setDialogData(sortDialogData(updatedData));
             setRouteHasUnsavedChanges(currentRouteId, true);
             setImageDialogVisible(false);
-            alert('⚠️ Images updated but failed to save to database.\nPlease click "Save Changes" button to save manually.');
+            
+            // Show toast notification instead of alert
+            toast.current.show({
+                severity: 'warn',
+                summary: '⚠️ Manual Save Required',
+                detail: 'Images updated but need manual save. Click Save button in menu.',
+                life: 6000,
+                sticky: false
+            });
         }
     };
     
@@ -2825,9 +2847,22 @@ export default function FlexibleScrollDemo() {
             data.id === powerModeRowId ? { ...data, powerMode: selectedPowerMode } : data
         );
         setDialogData(sortDialogData(updatedData));
-        setHasUnsavedChanges(true);
+        setRouteHasUnsavedChanges(currentRouteId, true);
         setPowerModeDialogVisible(false);
-        // Power mode saved
+        
+        // Show success toast
+        showSuccessToast('⚡ Power mode updated!');
+        
+        // Show reminder toast after a short delay
+        setTimeout(() => {
+            toast.current.show({
+                severity: 'warn',
+                summary: '💾 Remember to Save',
+                detail: 'Click the Save button in the menu to save your power mode changes permanently.',
+                life: 5000,
+                sticky: false
+            });
+        }, 500);
     };
 
     const handleAddRow = () => {
@@ -3250,6 +3285,74 @@ export default function FlexibleScrollDemo() {
             animation: 'fadeIn 0.6s ease-out'
         }}>
             <style>{tableStyles}</style>
+            
+            {/* Persistent Unsaved Changes Banner */}
+            {editMode && hasUnsavedChanges && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    zIndex: 1100,
+                    background: isDark 
+                        ? 'linear-gradient(90deg, #dc2626 0%, #f59e0b 100%)'
+                        : 'linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%)',
+                    padding: '1rem 2rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                    animation: 'slideDown 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    backdropFilter: 'blur(10px)'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <i className="pi pi-exclamation-circle" style={{
+                            fontSize: '1.5rem',
+                            color: '#ffffff',
+                            animation: 'pulse 2s ease-in-out infinite'
+                        }}></i>
+                        <div>
+                            <p style={{ 
+                                margin: 0, 
+                                fontWeight: '700', 
+                                fontSize: '1rem',
+                                color: '#ffffff'
+                            }}>
+                                ⚠️ You have unsaved changes
+                            </p>
+                            <p style={{ 
+                                margin: 0, 
+                                fontSize: '0.875rem', 
+                                color: 'rgba(255, 255, 255, 0.9)',
+                                marginTop: '0.25rem'
+                            }}>
+                                Click the Save button in the menu to save your work
+                            </p>
+                        </div>
+                    </div>
+                    <Button
+                        label="Save Now"
+                        icon={saving ? 'pi pi-spin pi-spinner' : 'pi pi-save'}
+                        onClick={() => {
+                            if (!saving) {
+                                handleSaveChanges();
+                            }
+                        }}
+                        disabled={saving}
+                        style={{
+                            backgroundColor: '#ffffff',
+                            color: '#dc2626',
+                            border: 'none',
+                            fontWeight: '700',
+                            padding: '0.75rem 1.5rem',
+                            borderRadius: '8px',
+                            cursor: saving ? 'not-allowed' : 'pointer',
+                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
+                        }}
+                    />
+                </div>
+            )}
+            
             {/* Navigation Header */}
             <div style={{
                 background: isDark ? '#0f172a' : '#e5e7eb',
@@ -3261,7 +3364,8 @@ export default function FlexibleScrollDemo() {
                 marginBottom: '2rem',
                 boxShadow: isDark ? '0 1px 4px rgba(0, 0, 0, 0.2)' : '0 1px 4px rgba(0, 0, 0, 0.06)',
                 transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                position: 'relative'
+                position: 'relative',
+                marginTop: editMode && hasUnsavedChanges ? '5rem' : '0'
             }}>
                 <h2 style={{ 
                     margin: 0, 
