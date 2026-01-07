@@ -1916,11 +1916,15 @@ export default function FlexibleScrollDemo() {
     const handleSaveChanges = async () => {
         // Validation: Check routes have required fields
         const invalidRoutes = routes.filter(r => {
-            // Check if it's a new row or edited row
-            const isNewOrEdited = newRows.includes(r.id) || r.route || r.shift || r.warehouse;
-            if (!isNewOrEdited) return false; // Skip unchanged rows
+            // Check if it's a new row (tempId > 1000000000000)
+            const isNewRow = r.id > 1000000000000;
             
-            return !r.route?.trim() || !r.shift?.trim() || !r.warehouse?.trim();
+            // For new rows OR rows with any data, validate required fields
+            if (isNewRow || r.route || r.shift || r.warehouse) {
+                return !r.route?.trim() || !r.shift?.trim() || !r.warehouse?.trim();
+            }
+            
+            return false; // Skip unchanged rows
         });
         
         if (invalidRoutes.length > 0) {
@@ -1965,9 +1969,12 @@ export default function FlexibleScrollDemo() {
             
             // Save completed successfully
             
-            // Refresh location count after save
+            // Refresh routes and locations from database to get real IDs
+            const freshRoutes = await CustomerService.getRoutes();
             const allLocations = await CustomerService.getDetailData();
-            const routesWithLocationCount = routes.map(route => {
+            
+            // Update routes with location counts
+            const routesWithLocationCount = freshRoutes.map(route => {
                 const locationCount = allLocations.filter(loc => loc.routeId === route.id).length;
                 return { ...route, locationCount };
             });
