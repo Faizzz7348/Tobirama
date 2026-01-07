@@ -5197,7 +5197,7 @@ export default function FlexibleScrollDemo() {
                                                 }}
                                             >
                                                 <img 
-                                                    src="/icon/Gmaps.png" 
+                                                    src="/Gmaps.png" 
                                                     alt="Google Maps" 
                                                     style={{ 
                                                         width: '100%', 
@@ -5313,7 +5313,7 @@ export default function FlexibleScrollDemo() {
                                             }}
                                         >
                                             <img 
-                                                src="/icon/QRcodewoi.png" 
+                                                src="/QRcodewoi.png" 
                                                 alt="QR Code" 
                                                 style={{ 
                                                     width: '100%', 
