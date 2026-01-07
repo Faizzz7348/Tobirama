@@ -11,6 +11,7 @@ import { ImageLightbox } from './components/ImageLightbox';
 import MiniMap from './components/MiniMap';
 import MarkerColorPicker from './components/MarkerColorPicker';
 import { TableRowModal } from './components/TableRowModal';
+import { EditableDescriptionList } from './components/EditableDescriptionList';
 import { useDeviceDetect, getResponsiveStyles } from './hooks/useDeviceDetect';
 import { usePWAInstall } from './hooks/usePWAInstall';
 import QrScanner from 'qr-scanner';
@@ -1427,52 +1428,20 @@ export default function FlexibleScrollDemo() {
             // Simulate a brief delay for visual feedback
             await new Promise(resolve => setTimeout(resolve, 300));
             
-            // Update the location in dialogData
-            const locationExists = dialogData.some(item => item.id === selectedRowInfo.id);
-            let updatedDialogData;
-            
-            if (locationExists) {
-                // Update existing location
-                updatedDialogData = dialogData.map(item => {
-                    if (item.id === selectedRowInfo.id) {
-                        return {
-                            ...item,
-                            latitude: infoEditData.latitude,
-                            longitude: infoEditData.longitude,
-                            address: infoEditData.address
-                        };
-                    }
-                    return item;
-                });
-            } else {
-                // Location not in dialogData, add it
-                updatedDialogData = [...dialogData, {
-                    ...selectedRowInfo,
-                    latitude: infoEditData.latitude,
-                    longitude: infoEditData.longitude,
-                    address: infoEditData.address
-                }];
-            }
+            // 🔄 UPDATE DIALOG DATA - Sync info modal changes to table columns
+            const updatedDialogData = dialogData.map(item => {
+                if (item.id === selectedRowInfo.id) {
+                    return {
+                        ...item,
+                        latitude: infoEditData.latitude,
+                        longitude: infoEditData.longitude,
+                        address: infoEditData.address
+                    };
+                }
+                return item;
+            });
             
             setDialogData(updatedDialogData);
-            
-            // Also need to fetch all locations to ensure we save all of them
-            if (!locationExists) {
-                // Location was not in dialogData, fetching all locations
-                const allLocations = await CustomerService.getDetailData();
-                const updatedAllLocations = allLocations.map(loc => {
-                    if (loc.id === selectedRowInfo.id) {
-                        return {
-                            ...loc,
-                            latitude: infoEditData.latitude,
-                            longitude: infoEditData.longitude,
-                            address: infoEditData.address
-                        };
-                    }
-                    return loc;
-                });
-                setDialogData(updatedAllLocations);
-            }
             
             // Update the location in routes
             const updatedRoutes = routes.map(route => ({
@@ -1487,13 +1456,12 @@ export default function FlexibleScrollDemo() {
                         };
                     }
                     return loc;
-                }) || []
+                })
             }));
             
             setRoutes(updatedRoutes);
-            setRouteHasUnsavedChanges(currentRouteId, true);
             
-            // Update selectedRowInfo
+            // Update selectedRowInfo to reflect the changes
             setSelectedRowInfo({
                 ...selectedRowInfo,
                 latitude: infoEditData.latitude,
@@ -1501,14 +1469,63 @@ export default function FlexibleScrollDemo() {
                 address: infoEditData.address
             });
             
+            // Mark as having unsaved changes
+            setRouteHasUnsavedChanges(currentRouteId, true);
+            
+            setSavingInfo(false);
             setInfoEditMode(false);
             
-            // Location info updated in state
+            // Show success toast
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes slideOut {
+                    from { transform: translateX(0); opacity: 1; }
+                    to { transform: translateX(100%); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            const toastEl = document.createElement('div');
+            toastEl.innerHTML = `
+                <div style="
+                    position: fixed;
+                    top: 80px;
+                    right: 20px;
+                    background: #10b981;
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    z-index: 10000;
+                    font-size: 14px;
+                    font-weight: 600;
+                    animation: slideIn 0.3s ease-out;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                ">
+                    <i class="pi pi-check-circle" style="font-size: 1.2rem;"></i>
+                    <span>✅ Location info saved successfully!</span>
+                </div>
+            `;
+            document.body.appendChild(toastEl);
+            
+            setTimeout(() => {
+                toastEl.style.animation = 'slideOut 0.3s ease-out';
+                setTimeout(() => {
+                    document.body.removeChild(toastEl);
+                    document.head.removeChild(style);
+                }, 300);
+            }, 2000);
+            
         } catch (error) {
-            console.error('❌ Error saving info:', error);
-            alert('Error saving location info: ' + error.message);
-        } finally {
+            console.error('❌ Error saving location info:', error);
             setSavingInfo(false);
+            alert('❌ Error saving location info. Please try again.');
         }
     };
     
@@ -2782,6 +2799,20 @@ export default function FlexibleScrollDemo() {
                 }));
             }
             handleUpdateDialogData(rowData.id, field, newValue);
+            
+            // 🔄 AUTO-SYNC: If info modal is open and editing same row, sync the changes
+            if (infoDialogVisible && selectedRowInfo && selectedRowInfo.id === rowData.id) {
+                if (field === 'latitude' || field === 'longitude' || field === 'address') {
+                    setInfoEditData(prev => ({
+                        ...prev,
+                        [field]: newValue
+                    }));
+                    setSelectedRowInfo(prev => ({
+                        ...prev,
+                        [field]: newValue
+                    }));
+                }
+            }
         }
     };
 
@@ -4738,12 +4769,103 @@ export default function FlexibleScrollDemo() {
                         <div style={{ padding: '0' }}>
                             {/* Mini Map */}
                             <MiniMap 
-                                latitude={!isRouteInfo ? selectedRowInfo.latitude : null}
-                                longitude={!isRouteInfo ? selectedRowInfo.longitude : null}
-                                address={!isRouteInfo ? selectedRowInfo.address : null}
+                                latitude={!isRouteInfo ? (infoEditMode ? infoEditData.latitude : selectedRowInfo.latitude) : null}
+                                longitude={!isRouteInfo ? (infoEditMode ? infoEditData.longitude : selectedRowInfo.longitude) : null}
+                                address={!isRouteInfo ? (infoEditMode ? infoEditData.address : selectedRowInfo.address) : null}
                                 locations={isRouteInfo ? selectedRowInfo.locations : []}
                                 style={{ marginBottom: '20px' }}
                             />
+                            
+                            {/* Coordinates & Address Edit Section - Show in edit mode for locations */}
+                            {!isRouteInfo && infoEditMode && (
+                                <div style={{ 
+                                    backgroundColor: isDark ? '#1e293b' : '#e7f3ff',
+                                    borderRadius: '8px',
+                                    border: isDark ? '1px solid #3b82f6' : '1px solid #93c5fd',
+                                    margin: '15px',
+                                    marginTop: '0',
+                                    padding: '15px'
+                                }}>
+                                    <div style={{ marginBottom: '12px' }}>
+                                        <strong style={{ 
+                                            fontSize: '12px', 
+                                            color: isDark ? '#93c5fd' : '#1e40af',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '6px'
+                                        }}>
+                                            <i className="pi pi-map-marker" style={{ fontSize: '14px' }}></i>
+                                            Location Coordinates & Address
+                                        </strong>
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                        <div>
+                                            <label style={{ fontSize: '10px', color: isDark ? '#d1d5db' : '#374151', display: 'block', marginBottom: '4px' }}>
+                                                Latitude:
+                                            </label>
+                                            <InputText
+                                                type="text"
+                                                value={infoEditData.latitude !== null && infoEditData.latitude !== undefined ? String(infoEditData.latitude) : ''}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setInfoEditData({
+                                                        ...infoEditData,
+                                                        latitude: val === '' ? null : parseFloat(val) || null
+                                                    });
+                                                }}
+                                                placeholder="e.g., 3.139003"
+                                                style={{ width: '100%', fontSize: '11px' }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{ fontSize: '10px', color: isDark ? '#d1d5db' : '#374151', display: 'block', marginBottom: '4px' }}>
+                                                Longitude:
+                                            </label>
+                                            <InputText
+                                                type="text"
+                                                value={infoEditData.longitude !== null && infoEditData.longitude !== undefined ? String(infoEditData.longitude) : ''}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setInfoEditData({
+                                                        ...infoEditData,
+                                                        longitude: val === '' ? null : parseFloat(val) || null
+                                                    });
+                                                }}
+                                                placeholder="e.g., 101.686855"
+                                                style={{ width: '100%', fontSize: '11px' }}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div style={{ marginTop: '12px' }}>
+                                        <label style={{ fontSize: '10px', color: isDark ? '#d1d5db' : '#374151', display: 'block', marginBottom: '4px' }}>
+                                            Address:
+                                        </label>
+                                        <InputText
+                                            type="text"
+                                            value={infoEditData.address || ''}
+                                            onChange={(e) => {
+                                                setInfoEditData({
+                                                    ...infoEditData,
+                                                    address: e.target.value
+                                                });
+                                            }}
+                                            placeholder="Enter full address..."
+                                            style={{ width: '100%', fontSize: '11px' }}
+                                        />
+                                    </div>
+                                    <div style={{ 
+                                        marginTop: '12px',
+                                        padding: '8px',
+                                        backgroundColor: isDark ? '#0f172a' : '#dbeafe',
+                                        borderRadius: '6px',
+                                        fontSize: '9px',
+                                        color: isDark ? '#93c5fd' : '#1e40af'
+                                    }}>
+                                        <i className="pi pi-info-circle" style={{ marginRight: '4px' }}></i>
+                                        Changes will sync with table columns. Use decimal format for coordinates.
+                                    </div>
+                                </div>
+                            )}
                             
                             {/* General Information Section - For Route Only */}
                             {isRouteInfo && selectedRowInfo.locations && (
@@ -4843,21 +4965,39 @@ export default function FlexibleScrollDemo() {
                                     <div style={{
                                         padding: '10px 15px',
                                         borderBottom: isDark ? '1px solid #374151' : '1px solid #e9ecef',
-                                        backgroundColor: isDark ? 'transparent' : '#f8f9fa'
+                                        backgroundColor: isDark ? 'transparent' : '#f8f9fa',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center'
                                     }}>
-                                        <strong style={{ fontSize: '12px', color: isDark ? '#e5e5e5' : '#495057', display: 'block', textAlign: 'center' }}>
-                                            Description
+                                        <strong style={{ fontSize: '12px', color: isDark ? '#e5e5e5' : '#495057' }}>
+                                            📝 Description
                                         </strong>
+                                        {editMode && (
+                                            <i className="pi pi-pencil" style={{ fontSize: '10px', color: '#3b82f6' }}></i>
+                                        )}
                                     </div>
                                     <div style={{ padding: '15px' }}>
-                                        <p style={{ 
-                                            fontSize: '12px', 
-                                            color: isDark ? '#d1d5db' : '#6b7280',
-                                            margin: 0,
-                                            lineHeight: '1.6'
-                                        }}>
-                                            {selectedRowInfo.description || 'No description available'}
-                                        </p>
+                                        <EditableDescriptionList
+                                            value={tempInfoData?.description || selectedRowInfo.description || ''}
+                                            onSave={(newValue) => {
+                                                setTempInfoData({ ...tempInfoData, description: newValue });
+                                                setInfoModalHasChanges(true);
+                                            }}
+                                            isEditable={editMode}
+                                        />
+                                        {editMode && infoModalHasChanges && (
+                                            <div style={{ marginTop: '12px', textAlign: 'center' }}>
+                                                <Button 
+                                                    label={savingInfo ? "Saving..." : "Save Description"} 
+                                                    icon={savingInfo ? "pi pi-spin pi-spinner" : "pi pi-check"} 
+                                                    onClick={handleSaveInfoModal}
+                                                    size="small"
+                                                    severity="success"
+                                                    disabled={savingInfo}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
