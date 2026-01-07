@@ -1525,6 +1525,15 @@ export default function FlexibleScrollDemo() {
             }
         }
         
+        // 🔍 Debug: Log data untuk ensure QR code fields tersedia
+        if (!isRoute && latestRowData.qrCodeImageUrl) {
+            console.log('✅ QR Code detected in location:', {
+                id: latestRowData.id,
+                location: latestRowData.location,
+                hasQrCode: true
+            });
+        }
+        
         setSelectedRowInfo(latestRowData);
         setIsRouteInfo(isRoute);
         setInfoEditData({
