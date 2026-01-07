@@ -2022,7 +2022,16 @@ export default function FlexibleScrollDemo() {
             
             setRoutes(sortedRoutes);
             setOriginalData([...sortedRoutes]);
-            setOriginalDialogData([...dialogData]);
+            
+            // 🔄 FIX: Update dialogData with fresh data from database to ensure QR code and other fields are synced
+            // Filter locations for current route if we have one open
+            const freshDialogData = currentRouteId 
+                ? allLocations.filter(loc => loc.routeId === currentRouteId)
+                : allLocations;
+            
+            setDialogData(freshDialogData);
+            setOriginalDialogData([...freshDialogData]);
+            
             setHasUnsavedChanges(false);
             // Clear all route-specific unsaved changes
             setRouteUnsavedChanges(new Map());
