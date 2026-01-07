@@ -987,6 +987,140 @@ export default function FlexibleScrollDemo() {
         };
     }, [functionDropdownVisible]);
 
+    // Keyboard shortcuts for Info Modal
+    useEffect(() => {
+        if (!infoDialogVisible) return;
+        
+        const handleKeyDown = (event) => {
+            // Ignore if user is typing in input field
+            if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                // Only handle Enter for save in edit mode
+                if (event.key === 'Enter' && infoEditMode && !editMode) {
+                    event.preventDefault();
+                    handleSaveInfoEdit();
+                }
+                return;
+            }
+            
+            switch (event.key) {
+                case 'Escape':
+                    event.preventDefault();
+                    // Check for unsaved changes before closing
+                    if (infoModalHasChanges) {
+                        const confirmed = window.confirm('⚠️ You have unsaved changes. Close anyway?');
+                        if (!confirmed) return;
+                    }
+                    setInfoDialogVisible(false);
+                    setInfoEditMode(false);
+                    setInfoModalHasChanges(false);
+                    setTempInfoData(null);
+                    break;
+                    
+                case 'ArrowLeft':
+                case 'ArrowRight':
+                    // Navigate between locations if we're viewing a location (not route)
+                    if (!isRouteInfo && dialogData && dialogData.length > 0) {
+                        event.preventDefault();
+                        const currentIndex = dialogData.findIndex(loc => loc.id === selectedRowInfo?.id);
+                        if (currentIndex === -1) return;
+                        
+                        let newIndex;
+                        if (event.key === 'ArrowLeft') {
+                            newIndex = currentIndex > 0 ? currentIndex - 1 : dialogData.length - 1;
+                        } else {
+                            newIndex = currentIndex < dialogData.length - 1 ? currentIndex + 1 : 0;
+                        }
+                        
+                        const nextLocation = dialogData[newIndex];
+                        handleShowInfo(nextLocation, false);
+                    }
+                    break;
+                    
+                case 'Enter':
+                    // Save if in edit mode
+                    if (infoEditMode && !editMode) {
+                        event.preventDefault();
+                        handleSaveInfoEdit();
+                    }
+                    break;
+                    
+                case 'e':
+                case 'E':
+                    // Toggle edit mode (only for locations in edit mode)
+                    if (!isRouteInfo && editMode && !infoEditMode) {
+                        event.preventDefault();
+                        setInfoEditMode(true);
+                    }
+                    break;
+                
+                // Shortcut buttons
+                case 'g':
+                case 'G':
+                    // Google Maps
+                    if (!isRouteInfo && selectedRowInfo?.latitude && selectedRowInfo?.longitude) {
+                        event.preventDefault();
+                        const url = `https://www.google.com/maps/search/?api=1&query=${selectedRowInfo.latitude},${selectedRowInfo.longitude}`;
+                        window.open(url, '_blank');
+                    }
+                    break;
+                    
+                case 'w':
+                case 'W':
+                    // Waze
+                    if (!isRouteInfo && selectedRowInfo?.latitude && selectedRowInfo?.longitude) {
+                        event.preventDefault();
+                        const url = `https://waze.com/ul?ll=${selectedRowInfo.latitude},${selectedRowInfo.longitude}&navigate=yes`;
+                        window.open(url, '_blank');
+                    }
+                    break;
+                    
+                case 'l':
+                case 'L':
+                    // Website Link
+                    if (!isRouteInfo) {
+                        event.preventDefault();
+                        if (editMode) {
+                            setCurrentEditingRowId(selectedRowInfo.id);
+                            setWebsiteLinkInput(selectedRowInfo.websiteLink || '');
+                            setWebsiteLinkDialogVisible(true);
+                        } else if (selectedRowInfo.websiteLink) {
+                            handleOpenLink(selectedRowInfo.websiteLink, 'Website');
+                        }
+                    }
+                    break;
+                    
+                case 'q':
+                case 'Q':
+                    // QR Code
+                    if (!isRouteInfo) {
+                        event.preventDefault();
+                        setCurrentEditingRowId(selectedRowInfo.id);
+                        setQrCodeImageUrl(selectedRowInfo.qrCodeImageUrl || '');
+                        setQrCodeDestinationUrl(selectedRowInfo.qrCodeDestinationUrl || '');
+                        setQrCodeDialogVisible(true);
+                    }
+                    break;
+                    
+                case 'p':
+                case 'P':
+                    // Phone/Call
+                    if (!isRouteInfo && selectedRowInfo?.phone) {
+                        event.preventDefault();
+                        window.location.href = `tel:${selectedRowInfo.phone}`;
+                    }
+                    break;
+                    
+                default:
+                    break;
+            }
+        };
+        
+        document.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [infoDialogVisible, infoEditMode, infoModalHasChanges, isRouteInfo, dialogData, selectedRowInfo, editMode]);
+
     const dialogFooterTemplate = () => {
         return (
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -5019,22 +5153,200 @@ export default function FlexibleScrollDemo() {
                                 </div>
                             )} */}
                             
-                            {/* Shortcut Section - Temporarily Disabled */}
-                            {/* {!isRouteInfo && (
+                            {/* Shortcut Section */}
+                            {!isRouteInfo && (
                                 <div style={{ padding: '15px', paddingTop: '0' }}>
                                     <strong style={{ fontSize: '12px', color: isDark ? '#e5e5e5' : '#495057', display: 'block', marginBottom: '12px', textAlign: 'center' }}>
-                                        Shortcut
+                                        🔗 Shortcuts
                                     </strong>
                                     <div style={{ 
                                         display: 'flex', 
-                                        gap: '12px',
+                                        gap: '8px',
                                         justifyContent: 'center',
                                         flexWrap: 'wrap'
                                     }}>
-                                        Google Maps, Waze, Website, QR Code buttons
+                                        {/* Google Maps Button - [G] */}
+                                        {selectedRowInfo?.latitude && selectedRowInfo?.longitude && (
+                                            <button
+                                                title="Google Maps [G]"
+                                                style={{
+                                                    width: '50px',
+                                                    height: '50px',
+                                                    borderRadius: '6px',
+                                                    border: 'none',
+                                                    padding: '5px',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    backgroundColor: 'transparent',
+                                                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                                                    boxSizing: 'border-box'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.transform = 'scale(1.1)';
+                                                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.transform = 'scale(1)';
+                                                    e.currentTarget.style.boxShadow = 'none';
+                                                }}
+                                                onClick={() => {
+                                                    const url = `https://www.google.com/maps/search/?api=1&query=${selectedRowInfo.latitude},${selectedRowInfo.longitude}`;
+                                                    window.open(url, '_blank');
+                                                }}
+                                            >
+                                                <img 
+                                                    src="/icon/Gmaps.png" 
+                                                    alt="Google Maps" 
+                                                    style={{ 
+                                                        width: '100%', 
+                                                        height: '100%',
+                                                        objectFit: 'contain'
+                                                    }} 
+                                                />
+                                            </button>
+                                        )}
+                                        
+                                        {/* Waze Button - [W] */}
+                                        {selectedRowInfo?.latitude && selectedRowInfo?.longitude && (
+                                            <button
+                                                title="Waze [W]"
+                                                style={{
+                                                    width: '50px',
+                                                    height: '50px',
+                                                    borderRadius: '6px',
+                                                    border: 'none',
+                                                    padding: '11px',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    backgroundColor: 'transparent',
+                                                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                                                    boxSizing: 'border-box'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.transform = 'scale(1.1)';
+                                                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.transform = 'scale(1)';
+                                                    e.currentTarget.style.boxShadow = 'none';
+                                                }}
+                                                onClick={() => {
+                                                    const url = `https://waze.com/ul?ll=${selectedRowInfo.latitude},${selectedRowInfo.longitude}&navigate=yes`;
+                                                    window.open(url, '_blank');
+                                                }}
+                                            >
+                                                <img 
+                                                    src="/waze.svg" 
+                                                    alt="Waze" 
+                                                    style={{ 
+                                                        width: '100%', 
+                                                        height: '100%',
+                                                        objectFit: 'contain'
+                                                    }} 
+                                                />
+                                            </button>
+                                        )}
+                                        
+                                        {/* Website Link Button - [L] */}
+                                        <Button
+                                            icon={selectedRowInfo?.websiteLink ? "pi pi-globe" : "pi pi-plus-circle"}
+                                            tooltip={selectedRowInfo?.websiteLink ? "Website Link [L]" : "Add Website [L]"}
+                                            tooltipOptions={{ position: 'top' }}
+                                            size="small"
+                                            severity={selectedRowInfo?.websiteLink ? "success" : "info"}
+                                            style={{
+                                                backgroundColor: selectedRowInfo?.websiteLink ? '#10b981' : '#8b5cf6',
+                                                border: 'none',
+                                                color: '#ffffff',
+                                                fontSize: '0.9rem',
+                                                padding: '0.6rem'
+                                            }}
+                                            onClick={() => {
+                                                if (editMode) {
+                                                    // Edit mode: Open dialog to add/edit
+                                                    setCurrentEditingRowId(selectedRowInfo.id);
+                                                    setWebsiteLinkInput(selectedRowInfo.websiteLink || '');
+                                                    setWebsiteLinkDialogVisible(true);
+                                                } else if (selectedRowInfo.websiteLink) {
+                                                    // View mode: Open link
+                                                    handleOpenLink(selectedRowInfo.websiteLink, 'Website');
+                                                }
+                                            }}
+                                        />
+                                        
+                                        {/* QR Code Button - [Q] */}
+                                        <button
+                                            title={editMode 
+                                                ? (selectedRowInfo?.qrCodeImageUrl ? "Edit QR Code [Q]" : "Add QR Code [Q]")
+                                                : "Scan QR Code [Q]"}
+                                            style={{
+                                                width: '50px',
+                                                height: '50px',
+                                                borderRadius: '6px',
+                                                border: 'none',
+                                                padding: '3px',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                backgroundColor: 'transparent',
+                                                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                                                boxSizing: 'border-box'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.transform = 'scale(1.1)';
+                                                e.currentTarget.style.boxShadow = isDark ? '0 4px 8px rgba(255, 255, 255, 0.3)' : '0 4px 8px rgba(0, 0, 0, 0.3)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.transform = 'scale(1)';
+                                                e.currentTarget.style.boxShadow = 'none';
+                                            }}
+                                            onClick={() => {
+                                                setCurrentEditingRowId(selectedRowInfo.id);
+                                                setQrCodeImageUrl(selectedRowInfo.qrCodeImageUrl || '');
+                                                setQrCodeDestinationUrl(selectedRowInfo.qrCodeDestinationUrl || '');
+                                                setQrCodeDialogVisible(true);
+                                            }}
+                                        >
+                                            <img 
+                                                src="/icon/QRcodewoi.png" 
+                                                alt="QR Code" 
+                                                style={{ 
+                                                    width: '100%', 
+                                                    height: '100%',
+                                                    objectFit: 'contain',
+                                                    filter: isDark ? 'brightness(0) saturate(100%) invert(100%)' : 'brightness(0) saturate(100%)'
+                                                }} 
+                                            />
+                                        </button>
+                                        
+                                        {/* Phone/Call Button - [P] */}
+                                        {selectedRowInfo?.phone && (
+                                            <Button
+                                                icon="pi pi-phone"
+                                                tooltip={`Call ${selectedRowInfo.phone} [P]`}
+                                                tooltipOptions={{ position: 'top' }}
+                                                size="small"
+                                                severity="help"
+                                                style={{
+                                                    backgroundColor: '#059669',
+                                                    border: 'none',
+                                                    color: '#ffffff',
+                                                    fontSize: '0.9rem',
+                                                    padding: '0.6rem'
+                                                }}
+                                                onClick={() => {
+                                                    window.location.href = `tel:${selectedRowInfo.phone}`;
+                                                }}
+                                            />
+                                        )}
                                     </div>
                                 </div>
-                            )} */}
+                            )}
                         </div>
                     )}
                 </Dialog>
