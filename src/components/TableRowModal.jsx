@@ -219,7 +219,7 @@ export function TableRowModal({ rowData, trigger }) {
                         className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg transform hover:scale-105"
                       >
                         <img 
-                          src="/icon/FamilyMart.png" 
+                          src="/FamilyMart.png" 
                           alt="FamilyMart" 
                           className="w-5 h-5 object-contain"
                         />

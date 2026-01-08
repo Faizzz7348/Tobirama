@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icon/FamilyMart.png', 'Gmaps.png', 'waze.svg', 'QRcodewoi.png'],
+      includeAssets: ['FamilyMart.png', 'Gmaps.png', 'waze.svg', 'QRcodewoi.png'],
       manifest: false, // Use existing manifest.json
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg}'],

@@ -5655,7 +5655,7 @@ export default function FlexibleScrollDemo() {
                                                     }}
                                                 >
                                                     <img 
-                                                        src="/icon/FamilyMart.png" 
+                                                        src="/FamilyMart.png" 
                                                         alt="FamilyMart" 
                                                         style={{ 
                                                             width: '100%', 
