@@ -1077,3 +1077,63 @@ body.dark .fullscreen-map-dialog .p-dialog-header {
 body.dark .fullscreen-map-dialog .p-dialog-content {
   background-color: #0f0f0f !important;
 }
+
+/* Smart Add Button Animation */
+@keyframes pulse-glow {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 25px rgba(139, 92, 246, 0.8), 0 0 35px rgba(139, 92, 246, 0.4);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+  }
+}
+
+.smart-add-button {
+  position: relative;
+  overflow: visible !important;
+}
+
+.smart-add-button:hover {
+  transform: scale(1.1) !important;
+  box-shadow: 0 0 30px rgba(139, 92, 246, 1) !important;
+  animation: none !important;
+}
+
+.smart-add-button::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, #8b5cf6, #a78bfa, #8b5cf6);
+  border-radius: 6px;
+  opacity: 0.3;
+  z-index: -1;
+  animation: rotate-gradient 3s linear infinite;
+}
+
+@keyframes rotate-gradient {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+  100% {
+    filter: hue-rotate(360deg);
+  }
+}
+
+/* Dark mode adjustments for smart button */
+body.dark .smart-add-button {
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.6) !important;
+}
+
+body.dark .smart-add-button:hover {
+  box-shadow: 0 0 35px rgba(139, 92, 246, 1) !important;
+}
+

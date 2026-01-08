@@ -1,48 +1,42 @@
 {
-  "name": "Table Grid Demo",
-  "short_name": "TableGrid",
-  "description": "React table component with PrimeReact - Route Management System",
+  "name": "FamilyMart Vending Route Manager",
+  "short_name": "FM Route",
+  "description": "FamilyMart Vending Machine Route Management System - Manage routes, locations, and refill services",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",
-  "theme_color": "#06b6d4",
+  "theme_color": "#00a650",
   "orientation": "any",
+  "scope": "/",
   "icons": [
     {
-      "src": "/waze.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/icon/FamilyMart.png",
+      "sizes": "192x192",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/waze.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/icon/FamilyMart.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon/FamilyMart.png",
+      "sizes": "192x192",
+      "type": "image/png",
       "purpose": "maskable"
     }
   ],
-  "categories": ["productivity", "utilities"],
+  "categories": ["productivity", "business", "utilities"],
   "shortcuts": [
     {
       "name": "View Routes",
       "short_name": "Routes",
       "description": "Open route management",
       "url": "/",
-      "icons": [{ "src": "/waze.svg", "sizes": "any" }]
+      "icons": [{ "src": "/icon/FamilyMart.png", "sizes": "192x192" }]
     }
   ],
-  "screenshots": [
-    {
-      "src": "/screenshot-wide.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide"
-    },
-    {
-      "src": "/screenshot-narrow.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow"
-    }
-  ]
+  "prefer_related_applications": false
 }

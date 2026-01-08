@@ -5391,8 +5391,11 @@ export default function FlexibleScrollDemo() {
                                                     e.currentTarget.style.boxShadow = 'none';
                                                 }}
                                                 onClick={() => {
-                                                    const url = `https://www.google.com/maps/search/?api=1&query=${selectedRowInfo.latitude},${selectedRowInfo.longitude}`;
-                                                    window.open(url, '_blank');
+                                                    const confirmed = window.confirm(`🗺️ Open Google Maps?\n\nLocation: ${selectedRowInfo.location || 'Unknown'}\nCoordinates: ${selectedRowInfo.latitude}, ${selectedRowInfo.longitude}`);
+                                                    if (confirmed) {
+                                                        const url = `https://www.google.com/maps/search/?api=1&query=${selectedRowInfo.latitude},${selectedRowInfo.longitude}`;
+                                                        window.open(url, '_blank');
+                                                    }
                                                 }}
                                             >
                                                 <img 
@@ -5434,8 +5437,11 @@ export default function FlexibleScrollDemo() {
                                                     e.currentTarget.style.boxShadow = 'none';
                                                 }}
                                                 onClick={() => {
-                                                    const url = `https://waze.com/ul?ll=${selectedRowInfo.latitude},${selectedRowInfo.longitude}&navigate=yes`;
-                                                    window.open(url, '_blank');
+                                                    const confirmed = window.confirm(`🚗 Open Waze Navigation?\n\nLocation: ${selectedRowInfo.location || 'Unknown'}\nCoordinates: ${selectedRowInfo.latitude}, ${selectedRowInfo.longitude}`);
+                                                    if (confirmed) {
+                                                        const url = `https://waze.com/ul?ll=${selectedRowInfo.latitude},${selectedRowInfo.longitude}&navigate=yes`;
+                                                        window.open(url, '_blank');
+                                                    }
                                                 }}
                                             >
                                                 <img 
@@ -5451,107 +5457,253 @@ export default function FlexibleScrollDemo() {
                                         )}
                                         
                                         {/* Website Link Button - [L] */}
-                                        <Button
-                                            icon={selectedRowInfo?.websiteLink ? "pi pi-globe" : "pi pi-plus-circle"}
-                                            tooltip={selectedRowInfo?.websiteLink ? "Website Link [L]" : "Add Website [L]"}
-                                            tooltipOptions={{ position: 'top' }}
-                                            size="small"
-                                            severity={selectedRowInfo?.websiteLink ? "success" : "info"}
-                                            style={{
-                                                backgroundColor: selectedRowInfo?.websiteLink ? '#10b981' : '#8b5cf6',
-                                                border: 'none',
-                                                color: '#ffffff',
-                                                fontSize: '0.9rem',
-                                                padding: '0.6rem'
-                                            }}
-                                            onClick={() => {
-                                                if (editMode) {
-                                                    // Edit mode: Open dialog to add/edit
-                                                    setCurrentEditingRowId(selectedRowInfo.id);
-                                                    setWebsiteLinkInput(selectedRowInfo.websiteLink || '');
-                                                    setWebsiteLinkDialogVisible(true);
-                                                } else if (selectedRowInfo.websiteLink) {
-                                                    // View mode: Open link
-                                                    handleOpenLink(selectedRowInfo.websiteLink, 'Website');
+                                        {/* Show in view mode only if URL exists, or always in edit mode */}
+                                        {(editMode || selectedRowInfo?.websiteLink) && (
+                                            <button
+                                                title={editMode
+                                                    ? (selectedRowInfo?.websiteLink ? "Edit Website [L]" : "Add Website Link [L]")
+                                                    : "Website Link [L]"
                                                 }
-                                            }}
-                                        />
+                                                style={{
+                                                    width: '50px',
+                                                    height: '50px',
+                                                    borderRadius: '6px',
+                                                    border: 'none',
+                                                    padding: '5px',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    backgroundColor: 'transparent',
+                                                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                                                    boxSizing: 'border-box',
+                                                    fontSize: '24px',
+                                                    color: editMode
+                                                        ? (selectedRowInfo?.websiteLink ? '#f59e0b' : '#8b5cf6')
+                                                        : '#10b981'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.transform = 'scale(1.1)';
+                                                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.transform = 'scale(1)';
+                                                    e.currentTarget.style.boxShadow = 'none';
+                                                }}
+                                                onClick={() => {
+                                                    if (editMode) {
+                                                        // Edit mode: Open dialog to add/edit
+                                                        setCurrentEditingRowId(selectedRowInfo.id);
+                                                        setWebsiteLinkInput(selectedRowInfo.websiteLink || '');
+                                                        setWebsiteLinkDialogVisible(true);
+                                                    } else if (selectedRowInfo.websiteLink) {
+                                                        // View mode: Open link with confirmation
+                                                        const confirmed = window.confirm(`🌐 Open Website?\n\nURL: ${selectedRowInfo.websiteLink}`);
+                                                        if (confirmed) {
+                                                            handleOpenLink(selectedRowInfo.websiteLink, 'Website');
+                                                        }
+                                                    }
+                                                }}
+                                            >
+                                                <i className={`pi ${
+                                                    editMode 
+                                                        ? (selectedRowInfo?.websiteLink ? 'pi-pencil' : 'pi-plus-circle')
+                                                        : 'pi-globe'
+                                                }`}></i>
+                                            </button>
+                                        )}
                                         
                                         {/* QR Code Button - [Q] */}
                         {/* Only show in view mode if QR code exists, or always show in edit mode */}
                         {(editMode || selectedRowInfo?.qrCodeImageUrl) && (
-                            <button
-                                title={editMode 
-                                    ? (selectedRowInfo?.qrCodeImageUrl ? "Edit QR Code [Q]" : "Add QR Code [Q]")
-                                    : "Scan QR Code [Q]"}
-                                style={{
-                                    width: '50px',
-                                    height: '50px',
-                                    borderRadius: '6px',
-                                    border: 'none',
-                                    padding: '3px',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    backgroundColor: 'transparent',
-                                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                                    boxSizing: 'border-box'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.transform = 'scale(1.1)';
-                                    e.currentTarget.style.boxShadow = isDark ? '0 4px 8px rgba(255, 255, 255, 0.3)' : '0 4px 8px rgba(0, 0, 0, 0.3)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.transform = 'scale(1)';
-                                    e.currentTarget.style.boxShadow = 'none';
-                                }}
-                                onClick={() => {
-                                    if (editMode) {
+                            editMode ? (
+                                <button
+                                    title={selectedRowInfo?.qrCodeImageUrl ? "Edit QR Code [Q]" : "Add QR Code [Q]"}
+                                    style={{
+                                        width: '50px',
+                                        height: '50px',
+                                        borderRadius: '6px',
+                                        border: 'none',
+                                        padding: '5px',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        backgroundColor: 'transparent',
+                                        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                                        boxSizing: 'border-box',
+                                        fontSize: '24px',
+                                        color: selectedRowInfo?.qrCodeImageUrl ? '#f59e0b' : '#8b5cf6'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'scale(1.1)';
+                                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'scale(1)';
+                                        e.currentTarget.style.boxShadow = 'none';
+                                    }}
+                                    onClick={() => {
                                         // Edit mode: Open dialog to edit QR code
                                         setCurrentEditingRowId(selectedRowInfo.id);
                                         setQrCodeImageUrl(selectedRowInfo.qrCodeImageUrl || '');
                                         setQrCodeDestinationUrl(selectedRowInfo.qrCodeDestinationUrl || '');
                                         setQrCodeDialogVisible(true);
-                                    } else {
-                                        // View mode: Auto-scan QR code and open URL (like Route.git)
+                                    }}
+                                >
+                                    <i className={`pi ${selectedRowInfo?.qrCodeImageUrl ? 'pi-pencil' : 'pi-plus-circle'}`}></i>
+                                </button>
+                            ) : (
+                                <button
+                                    title="Scan QR Code [Q]"
+                                    style={{
+                                        width: '50px',
+                                        height: '50px',
+                                        borderRadius: '6px',
+                                        border: 'none',
+                                        padding: '3px',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        backgroundColor: 'transparent',
+                                        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                                        boxSizing: 'border-box'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'scale(1.1)';
+                                        e.currentTarget.style.boxShadow = isDark ? '0 4px 8px rgba(255, 255, 255, 0.3)' : '0 4px 8px rgba(0, 0, 0, 0.3)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'scale(1)';
+                                        e.currentTarget.style.boxShadow = 'none';
+                                    }}
+                                    onClick={() => {
+                                        // View mode: Auto-scan QR code and open URL with confirmation
                                         if (selectedRowInfo.qrCodeImageUrl) {
-                                            handleScanQrCode(selectedRowInfo.qrCodeImageUrl, selectedRowInfo.qrCodeDestinationUrl);
+                                            const confirmed = window.confirm(`📱 Scan QR Code and open destination?\n\nDestination: ${selectedRowInfo.qrCodeDestinationUrl || 'Unknown'}`);
+                                            if (confirmed) {
+                                                handleScanQrCode(selectedRowInfo.qrCodeImageUrl, selectedRowInfo.qrCodeDestinationUrl);
+                                            }
                                         }
-                                    }
-                                }}
-                            >
-                                <img 
-                                    src="/QRcodewoi.png" 
-                                    alt="QR Code" 
-                                    style={{ 
-                                        width: '100%', 
-                                        height: '100%',
-                                        objectFit: 'contain',
-                                        filter: isDark ? 'brightness(0) saturate(100%) invert(100%)' : 'brightness(0) saturate(100%)'
-                                    }} 
-                                />
-                            </button>
+                                    }}
+                                >
+                                    <img 
+                                        src="/QRcodewoi.png" 
+                                        alt="QR Code" 
+                                        style={{ 
+                                            width: '100%', 
+                                            height: '100%',
+                                            objectFit: 'contain',
+                                            filter: isDark ? 'brightness(0) saturate(100%) invert(100%)' : 'brightness(0) saturate(100%)'
+                                        }} 
+                                    />
+                                </button>
+                            )
                         )}
+                                        
+                                        {/* FamilyMart Button */}
+                                        {(() => {
+                                            const code = selectedRowInfo?.code;
+                                            let familyMartLink = null;
+                                            
+                                            // If code is empty, default to M0000
+                                            if (!code || code.toString().trim() === '') {
+                                                familyMartLink = 'https://fmvending.web.app/refill-service/M0000';
+                                            } else {
+                                                // Check if code is numeric only (no letters)
+                                                const isNumeric = /^\d+$/.test(code.toString().trim());
+                                                if (isNumeric) {
+                                                    // Format to 4 digits with leading zeros
+                                                    const formattedCode = code.toString().trim().padStart(4, '0');
+                                                    familyMartLink = `https://fmvending.web.app/refill-service/M${formattedCode}`;
+                                                }
+                                            }
+                                            
+                                            // Only show button if we have a valid link
+                                            return familyMartLink ? (
+                                                <button
+                                                    title="FamilyMart Refill"
+                                                    style={{
+                                                        width: '50px',
+                                                        height: '50px',
+                                                        borderRadius: '6px',
+                                                        border: 'none',
+                                                        padding: '5px',
+                                                        cursor: 'pointer',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        backgroundColor: 'transparent',
+                                                        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                                                        boxSizing: 'border-box'
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        e.currentTarget.style.transform = 'scale(1.1)';
+                                                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.style.transform = 'scale(1)';
+                                                        e.currentTarget.style.boxShadow = 'none';
+                                                    }}
+                                                    onClick={() => {
+                                                        const code = selectedRowInfo?.code || '0000';
+                                                        const confirmed = window.confirm(`🏪 Open FamilyMart Refill Service?\n\nLocation Code: ${code}\nURL: ${familyMartLink}`);
+                                                        if (confirmed) {
+                                                            window.open(familyMartLink, '_blank');
+                                                        }
+                                                    }}
+                                                >
+                                                    <img 
+                                                        src="/icon/FamilyMart.png" 
+                                                        alt="FamilyMart" 
+                                                        style={{ 
+                                                            width: '100%', 
+                                                            height: '100%',
+                                                            objectFit: 'contain'
+                                                        }} 
+                                                    />
+                                                </button>
+                                            ) : null;
+                                        })()}
+                                        
                                         {/* Phone/Call Button - [P] */}
                                         {selectedRowInfo?.phone && (
-                                            <Button
-                                                icon="pi pi-phone"
-                                                tooltip={`Call ${selectedRowInfo.phone} [P]`}
-                                                tooltipOptions={{ position: 'top' }}
-                                                size="small"
-                                                severity="help"
+                                            <button
+                                                title={`Call ${selectedRowInfo.phone} [P]`}
                                                 style={{
-                                                    backgroundColor: '#059669',
+                                                    width: '50px',
+                                                    height: '50px',
+                                                    borderRadius: '6px',
                                                     border: 'none',
-                                                    color: '#ffffff',
-                                                    fontSize: '0.9rem',
-                                                    padding: '0.6rem'
+                                                    padding: '5px',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    backgroundColor: 'transparent',
+                                                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                                                    boxSizing: 'border-box',
+                                                    fontSize: '24px',
+                                                    color: '#059669'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.transform = 'scale(1.1)';
+                                                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.transform = 'scale(1)';
+                                                    e.currentTarget.style.boxShadow = 'none';
                                                 }}
                                                 onClick={() => {
-                                                    window.location.href = `tel:${selectedRowInfo.phone}`;
+                                                    const confirmed = window.confirm(`📞 Call this number?\n\nPhone: ${selectedRowInfo.phone}`);
+                                                    if (confirmed) {
+                                                        window.location.href = `tel:${selectedRowInfo.phone}`;
+                                                    }
                                                 }}
-                                            />
+                                            >
+                                                <i className="pi pi-phone"></i>
+                                            </button>
                                         )}
                                     </div>
                                 </div>
@@ -7463,23 +7615,43 @@ export default function FlexibleScrollDemo() {
                         setCurrentEditingRowId(null);
                     }}
                     footer={
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                            <Button 
-                                label="Cancel" 
-                                icon="pi pi-times" 
-                                onClick={() => {
-                                    setWebsiteLinkDialogVisible(false);
-                                    setWebsiteLinkInput('');
-                                    setCurrentEditingRowId(null);
-                                }}
-                                className="p-button-text"
-                            />
-                            <Button 
-                                label="Save" 
-                                icon="pi pi-check" 
-                                onClick={handleSaveWebsiteLink}
-                                className="p-button-success"
-                            />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+                            <div>
+                                {/* Show Delete button only if URL exists */}
+                                {websiteLinkInput && (
+                                    <Button 
+                                        label="Delete" 
+                                        icon="pi pi-trash" 
+                                        onClick={() => {
+                                            const confirmed = window.confirm('🗑️ Delete Website Link?\n\nThis will remove the website link from this location.');
+                                            if (confirmed) {
+                                                setWebsiteLinkInput('');
+                                                handleSaveWebsiteLink();
+                                            }
+                                        }}
+                                        className="p-button-danger"
+                                        outlined
+                                    />
+                                )}
+                            </div>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <Button 
+                                    label="Cancel" 
+                                    icon="pi pi-times" 
+                                    onClick={() => {
+                                        setWebsiteLinkDialogVisible(false);
+                                        setWebsiteLinkInput('');
+                                        setCurrentEditingRowId(null);
+                                    }}
+                                    className="p-button-text"
+                                />
+                                <Button 
+                                    label="Save" 
+                                    icon="pi pi-check" 
+                                    onClick={handleSaveWebsiteLink}
+                                    className="p-button-success"
+                                />
+                            </div>
                         </div>
                     }
                 >
@@ -7541,30 +7713,51 @@ export default function FlexibleScrollDemo() {
                     }}
                     footer={
                         editMode ? (
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                                <Button 
-                                    label="Cancel" 
-                                    icon="pi pi-times" 
-                                    onClick={() => {
-                                        setQrCodeDialogVisible(false);
-                                        setQrCodeImageUrl('');
-                                        setQrCodeDestinationUrl('');
-                                        setCurrentEditingRowId(null);
-                                        setScannedUrl(''); // Reset scanned URL
-                                        setScanningQrCode(false); // Reset scanning state
-                                        // Reset file input
-                                        const fileInput = document.getElementById('qr-code-upload-input');
-                                        if (fileInput) fileInput.value = '';
-                                    }}
-                                    className="p-button-text"
-                                />
-                                <Button 
-                                    label="Save" 
-                                    icon="pi pi-check" 
-                                    onClick={handleSaveQrCode}
-                                    className="p-button-success"
-                                    // Allow saving even if empty (to delete QR code)
-                                />
+                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+                                <div>
+                                    {/* Show Delete button only if QR code exists */}
+                                    {(qrCodeImageUrl || qrCodeDestinationUrl) && (
+                                        <Button 
+                                            label="Delete" 
+                                            icon="pi pi-trash" 
+                                            onClick={() => {
+                                                const confirmed = window.confirm('🗑️ Delete QR Code?\n\nThis will remove the QR code and destination URL from this location.');
+                                                if (confirmed) {
+                                                    setQrCodeImageUrl('');
+                                                    setQrCodeDestinationUrl('');
+                                                    handleSaveQrCode();
+                                                }
+                                            }}
+                                            className="p-button-danger"
+                                            outlined
+                                        />
+                                    )}
+                                </div>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <Button 
+                                        label="Cancel" 
+                                        icon="pi pi-times" 
+                                        onClick={() => {
+                                            setQrCodeDialogVisible(false);
+                                            setQrCodeImageUrl('');
+                                            setQrCodeDestinationUrl('');
+                                            setCurrentEditingRowId(null);
+                                            setScannedUrl(''); // Reset scanned URL
+                                            setScanningQrCode(false); // Reset scanning state
+                                            // Reset file input
+                                            const fileInput = document.getElementById('qr-code-upload-input');
+                                            if (fileInput) fileInput.value = '';
+                                        }}
+                                        className="p-button-text"
+                                    />
+                                    <Button 
+                                        label="Save" 
+                                        icon="pi pi-check" 
+                                        onClick={handleSaveQrCode}
+                                        className="p-button-success"
+                                        // Allow saving even if empty (to delete QR code)
+                                    />
+                                </div>
                             </div>
                         ) : (
                             <div style={{ display: 'flex', justifyContent: 'center' }}>

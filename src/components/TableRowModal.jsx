@@ -14,6 +14,28 @@ export function TableRowModal({ rowData, trigger }) {
   const [selectedDate, setSelectedDate] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
   
+  // FamilyMart Link Generator
+  const generateFamilyMartLink = () => {
+    const code = rowData.code;
+    
+    // If code is empty, return default link
+    if (!code || code.toString().trim() === '') {
+      return 'https://fmvending.web.app/refill-service/M0000';
+    }
+    
+    // Check if code is numeric only (no letters)
+    const isNumeric = /^\d+$/.test(code.toString().trim());
+    if (!isNumeric) {
+      return null; // Don't show button if contains letters
+    }
+    
+    // Format to 4 digits with leading zeros
+    const formattedCode = code.toString().trim().padStart(4, '0');
+    return `https://fmvending.web.app/refill-service/M${formattedCode}`;
+  };
+  
+  const familyMartLink = generateFamilyMartLink();
+  
   // Sample history data
   const historyData = [
     { date: new Date(Date.now() - 86400000), action: 'Updated', user: 'Admin', details: 'Modified route name' },
@@ -182,6 +204,30 @@ export function TableRowModal({ rowData, trigger }) {
                     </div>
                   </div>
                 )}
+
+                {/* Shortcuts Section */}
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-neutral-700">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">
+                    🔗 Shortcuts
+                  </h3>
+                  <div className="flex flex-wrap gap-3">
+                    {familyMartLink && (
+                      <a
+                        href={familyMartLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg transform hover:scale-105"
+                      >
+                        <img 
+                          src="/icon/FamilyMart.png" 
+                          alt="FamilyMart" 
+                          className="w-5 h-5 object-contain"
+                        />
+                        <span className="font-medium text-sm">FamilyMart Refill</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
               </>
             )}
           </div>
