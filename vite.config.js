@@ -45,6 +45,18 @@ export default defineConfig({
       }
     })
   ],
+  server: {
+    host: true,
+    port: 5173,
+    strictPort: false,
+    open: false
+  },
+  preview: {
+    host: true,
+    port: 4173,
+    strictPort: false,
+    open: false
+  },
   publicDir: 'public',
   build: {
     chunkSizeWarningLimit: 1500,

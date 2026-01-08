@@ -24,9 +24,10 @@ React table component with PrimeReact DataTable featuring flexible scrolling, di
   - 🔀 **Draggable Rows** - Reorder by dragging (Edit Mode only)
 
 ### Image Upload Features
-- �️ **Image Management** - Add, edit, or delete image URLs manually
+- 📤 **Image Upload** - Upload images directly to ImgBB hosting service
+- �️ **Image Management** - Add, edit, or delete image URLs
 - ✅ **Image Display** - View images in lightbox gallery with zoom & thumbnails
-- ⚠️ **Note** - Upload functionality currently disabled (requires backend setup)
+- 💾 **Auto-Save** - Images automatically saved to database after upload
 
 ### QR Code Features (NEW! 🎉)
 - 📱 **QR Code Upload** - Upload QR code images for each location
@@ -69,20 +70,34 @@ npm install
 
 ## Environment Setup
 
-### Optional Environment Variables
-
-Create a `.env` file in the project root (optional):
+Create a `.env` file in the project root:
 
 ```env
-# API Configuration (Optional - for future backend integration)
-# VITE_API_URL="http://localhost:3000/api"
+# ImgBB API Configuration (Required for image upload)
+# Get your API key from: https://api.imgbb.com/
+VITE_IMGBB_API_KEY=your_imgbb_api_key_here
 ```
 
-**Note:** Currently, the app uses localStorage for data persistence. No backend/database required.
+See [.env.example](.env.example) for reference.
+
+## Database Setup
+
+This application uses Neon PostgreSQL database. Set up your database:
+
+```bash
+# Run database setup script
+npm run setup-db
+```
+
+**Configure database connection:**
+Add your database connection string in `.env`:
+```env
+DATABASE_URL=your_postgres_connection_string
+```
+
+See [.env.example](.env.example) for reference.
 
 ## Running the Project
-
-### Development (Frontend Only)
 
 Start the Vite development server:
 
@@ -91,33 +106,6 @@ npm run dev
 ```
 
 The application will open at `http://localhost:5173`
-
-**⚠️ Note:** API endpoints (image upload, QR code upload) will NOT work with this command.
-
-### Development with API (Recommended)
-
-Start Vercel development server with API support:
-
-```bash
-# First time only: Install Vercel CLI
-npm install -g vercel
-
-# Login and link project
-vercel login
-vercel link
-
-# Pull environment variables
-vercel env pull
-
-# Start development server
-npm run dev:vercel
-```
-
-The application will open at `http://localhost:3000`
-
-**✅ With this command:** All API endpoints work including image & QR code upload!
-
-**See detailed guide:** [VERCEL_DEV_SETUP.md](VERCEL_DEV_SETUP.md)
 
 ## Build
 
@@ -140,19 +128,10 @@ npm i -g vercel
 vercel --prod
 ```
 
-**Setup Image Upload:**
-1. Add environment variable in Vercel Dashboard:
-   - `BLOB_READ_WRITE_TOKEN` = your Vercel Blob token (get from https://vercel.com/dashboard/stores)
-2. See [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) for complete guide
-
-**Documentation:**
-- 📖 [VERCEL_DEV_SETUP.md](VERCEL_DEV_SETUP.md) - **Development dengan Vercel (MUST READ!)**
-- 📖 [QR_CODE_FEATURE.md](QR_CODE_FEATURE.md) - QR Code feature guide
-- 📖 [QUICKSTART.md](QUICKSTART.md) - 3-step quick setup
-- 📖 [IMAGE_UPLOAD_GUIDE.md](IMAGE_UPLOAD_GUIDE.md) - Complete image upload guide
-- 📖 [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) - Deployment steps
-- 📖 [IMAGE_UPLOAD_FIX_SUMMARY.md](IMAGE_UPLOAD_FIX_SUMMARY.md) - Technical overview
-- 📖 [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md) - Vercel deployment guide
+**Environment Variables:**
+Add these in Vercel Dashboard:
+- `VITE_IMGBB_API_KEY` - Your ImgBB API key
+- `DATABASE_URL` - Your Neon PostgreSQL connection string
 
 ## Project Structure
 
@@ -163,9 +142,14 @@ src/
 │   ├── ImageLightbox.jsx    # Image lightbox component
 │   ├── AnimatedModal.jsx    # Animated modal component
 │   ├── MiniMap.jsx          # Map component (Leaflet)
-│   └── MarkerColorPicker.jsx # Color picker for map markers
+│   ├── MarkerColorPicker.jsx # Color picker for map markers
+│   ├── TableRowModal.jsx    # Row details modal
+│   └── EditableDescriptionList.jsx # Editable descriptions
 ├── service/
-│   └── CustomerService.js   # Data service (localStorage)
+│   ├── CustomerService.js   # Data service (Neon PostgreSQL)
+│   └── ImageUploadService.js # ImgBB upload service
+├── config/
+│   └── database.js          # Database configuration
 ├── hooks/
 │   ├── useDeviceDetect.js   # Device detection hook
 │   └── usePWAInstall.js     # PWA installation hook
