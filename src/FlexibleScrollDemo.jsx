@@ -3430,9 +3430,10 @@ export default function FlexibleScrollDemo() {
                         aria-label="Menu"
                     />
                 </div>
-                
-                {/* Custom Menu Overlay */}
-                {customMenuVisible && (
+            </div>
+            
+            {/* Custom Menu Overlay - Outside header for proper blur */}
+            {customMenuVisible && (
                     <>
                         <div 
                             onClick={() => setCustomMenuVisible(false)}
@@ -3442,17 +3443,17 @@ export default function FlexibleScrollDemo() {
                                 left: 0,
                                 right: 0,
                                 bottom: 0,
-                                backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                                backgroundColor: 'rgba(0, 0, 0, 0.4)',
                                 zIndex: 999,
-                                backdropFilter: 'blur(2px)',
+                                backdropFilter: 'blur(8px)',
+                                WebkitBackdropFilter: 'blur(8px)',
                                 animation: 'fadeIn 0.2s ease-out'
                             }}
                         />
                         <div style={{
-                            position: 'absolute',
-                            top: '100%',
+                            position: 'fixed',
+                            top: editMode && hasUnsavedChanges ? 'calc(5rem + 80px)' : '80px',
                             right: '2rem',
-                            marginTop: '0.5rem',
                             backgroundColor: isDark ? '#1e293b' : 'rgba(249, 250, 251, 0.7)',
                             backdropFilter: isDark ? 'none' : 'blur(30px) saturate(200%)',
                             WebkitBackdropFilter: isDark ? 'none' : 'blur(30px) saturate(200%)',
@@ -3849,7 +3850,6 @@ export default function FlexibleScrollDemo() {
                         </div>
                     </>
                 )}
-            </div>
 
             {/* Update Notification Banner */}
             {showUpdateBanner && (
