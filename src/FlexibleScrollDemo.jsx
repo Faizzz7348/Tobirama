@@ -14,6 +14,7 @@ import { TableRowModal } from './components/TableRowModal';
 import { EditableDescriptionList } from './components/EditableDescriptionList';
 import { useDeviceDetect, getResponsiveStyles } from './hooks/useDeviceDetect';
 import { usePWAInstall } from './hooks/usePWAInstall';
+import { uploadImageToImgBB } from './service/ImageUploadService';
 import QrScanner from 'qr-scanner';
 
 // CSS untuk remove border dari table header
@@ -944,12 +945,6 @@ export default function FlexibleScrollDemo() {
             newThemeLink.rel = 'stylesheet';
             newThemeLink.href = themePath;
             document.head.appendChild(newThemeLink);
-        }
-        
-        // Update browser tab theme-color based on mode
-        const themeColorMeta = document.querySelector('meta[name="theme-color"]');
-        if (themeColorMeta) {
-            themeColorMeta.setAttribute('content', isDark ? '#0f172a' : '#e5e7eb');
         }
     }, [isDark]);
     
@@ -2691,123 +2686,75 @@ export default function FlexibleScrollDemo() {
         try {
             setUploadingImage(true);
             
-            // ⚠️ Image upload disabled - Prisma and Vercel Blob removed
-            alert('Image upload feature is currently disabled.\n\nTo enable, you need to:\n1. Set up a backend API\n2. Configure image storage (e.g., Cloudinary, ImgBB, AWS S3)\n3. Update this handler to use your API endpoint');
-            
-            return;
-            
-            /* ORIGINAL UPLOAD CODE - Commented out
             console.log('Starting upload...', {
                 fileName: file.name,
                 fileType: file.type,
                 fileSize: (file.size / 1024 / 1024).toFixed(2) + ' MB'
             });
             
-            // Create FormData
-            const formData = new FormData();
-            formData.append('image', file);
+            // Upload to ImgBB
+            const result = await uploadImageToImgBB(file, file.name);
             
-            // Determine API endpoint
-            const apiUrl = '/api/upload';
-            
-            // Upload via API endpoint
-            let response;
-            try {
-                response = await fetch(apiUrl, {
-                    method: 'POST',
-                    body: formData
-                });
-            } catch (fetchError) {
-                console.error('Fetch error:', fetchError);
-                throw new Error(`Network error: ${fetchError.message}`);
-            }
-            
-            // Read response
-            let responseData;
-            const contentType = response.headers.get('content-type');
-            
-            try {
-                if (contentType && contentType.includes('application/json')) {
-                    responseData = await response.json();
-                } else {
-                    const text = await response.text();
-                    try {
-                        responseData = JSON.parse(text);
-                    } catch (e) {
-                        responseData = { error: text };
-                    }
-                }
-            } catch (readError) {
-                console.error('Error reading response:', readError);
-                throw new Error('Failed to read server response');
-            }
-            
-            if (!response.ok) {
-                let errorMessage = `Upload failed (${response.status})`;
-                if (responseData) {
-                    console.error('Upload error response:', responseData);
-                    errorMessage = responseData.message || responseData.error || errorMessage;
-                }
-                alert(errorMessage);
+            if (result.error) {
+                console.error('Upload failed:', result.error);
+                alert(`Failed to upload image: ${result.error}`);
                 return;
             }
             
-            if (responseData && responseData.success && responseData.data && responseData.data.url) {
-                const imageUrl = responseData.data.url;
-                const newImages = [...currentRowImages, imageUrl];
-                const newIndex = newImages.length - 1;
-                setCurrentRowImages(newImages);
-                
-                if (selectedRowId === 'frozen-row') {
-                    setFrozenRowData(prev => ({
-                        ...prev,
-                        images: newImages
-                    }));
-                    alert('✅ Image uploaded and saved!');
-                } else {
-                    const updatedData = dialogData.map(data => 
-                        data.id === selectedRowId ? { ...data, images: newImages } : data
-                    );
-                    
-                    // AUTO-SAVE
-                    try {
-                        console.log('🔄 Auto-saving image to database...');
-                        await CustomerService.saveLocations(updatedData);
-                        console.log('✅ Image saved to database successfully');
-                        
-                        const freshData = await CustomerService.getDetailData(currentRouteId);
-                        const sortedFreshData = sortDialogData(freshData);
-                        setDialogData(sortedFreshData);
-                        setOriginalDialogData(sortedFreshData);
-                        
-                        const updatedRow = sortedFreshData.find(row => row.id === selectedRowId);
-                        if (updatedRow && updatedRow.images) {
-                            setCurrentRowImages(updatedRow.images);
-                        }
-                        
-                        if (import.meta.env.DEV) {
-                            localStorage.setItem('locations', JSON.stringify(sortedFreshData));
-                            console.log('💾 Image also backed up to localStorage');
-                        }
-                        
-                        alert('✅ Image uploaded and saved to database successfully!');
-                    } catch (saveError) {
-                        console.error('❌ Failed to auto-save image:', saveError);
-                        alert('⚠️ Image uploaded but failed to save to database.\nPlease click "Save Changes" button to save manually.');
-                        setDialogData(sortDialogData(updatedData));
-                        setHasUnsavedChanges(true);
-                    }
-                }
-                
-                setImageLoadingStates(prev => ({ ...prev, [newIndex]: true }));
+            console.log('✅ Upload successful:', result.url);
+            
+            // Add the new image URL to the array
+            const newImages = [...currentRowImages, result.url];
+            const newIndex = newImages.length - 1;
+            setCurrentRowImages(newImages);
+            
+            // Mark as loading while thumbnail loads
+            setImageLoadingStates(prev => ({ ...prev, [newIndex]: true }));
+            
+            // Auto-save to database
+            if (selectedRowId === 'frozen-row') {
+                setFrozenRowData(prev => ({
+                    ...prev,
+                    images: newImages
+                }));
+                alert('✅ Image uploaded and saved!');
             } else {
-                console.error('Upload failed - invalid response:', responseData);
-                alert(`Failed to upload image: ${responseData?.error || 'Invalid response from server'}`);
+                const updatedData = dialogData.map(data => 
+                    data.id === selectedRowId ? { ...data, images: newImages } : data
+                );
+                
+                // AUTO-SAVE
+                try {
+                    console.log('🔄 Auto-saving image to database...');
+                    await CustomerService.saveLocations(updatedData);
+                    console.log('✅ Image saved to database successfully');
+                    
+                    const freshData = await CustomerService.getDetailData(currentRouteId);
+                    const sortedFreshData = sortDialogData(freshData);
+                    setDialogData(sortedFreshData);
+                    setOriginalDialogData(sortedFreshData);
+                    
+                    const updatedRow = sortedFreshData.find(row => row.id === selectedRowId);
+                    if (updatedRow && updatedRow.images) {
+                        setCurrentRowImages(updatedRow.images);
+                    }
+                    
+                    if (import.meta.env.DEV) {
+                        localStorage.setItem('locations', JSON.stringify(sortedFreshData));
+                        console.log('💾 Image also backed up to localStorage');
+                    }
+                    
+                    alert('✅ Image uploaded and saved to database successfully!');
+                } catch (saveError) {
+                    console.error('❌ Failed to auto-save image:', saveError);
+                    alert('⚠️ Image uploaded but failed to save to database.\nPlease click "Save Changes" button to save manually.');
+                    setDialogData(sortDialogData(updatedData));
+                    setHasUnsavedChanges(true);
+                }
             }
-            */
         } catch (error) {
             console.error('Error uploading image:', error);
-            alert(`Error uploading image: ${error.message}\n\nPlease check:\n- Internet connection\n- File size (<10MB limit)\n- IMGBB_API_KEY is configured in Vercel`);
+            alert(`Error uploading image: ${error.message}\n\nPlease check:\n- Internet connection\n- File size (<32MB limit)\n- ImgBB API Key is configured`);
         } finally {
             setUploadingImage(false);
             // Clear file input
