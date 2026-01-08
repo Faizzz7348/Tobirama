@@ -3392,7 +3392,7 @@ export default function FlexibleScrollDemo() {
                 </div>
             )}
             
-            {/* Navigation Header */}
+            {/* Navigation Header - Sticky */}
             <div style={{
                 background: isDark ? '#0f172a' : '#e5e7eb',
                 padding: '1.5rem 2rem',
@@ -3403,8 +3403,11 @@ export default function FlexibleScrollDemo() {
                 marginBottom: '2rem',
                 boxShadow: isDark ? '0 1px 4px rgba(0, 0, 0, 0.2)' : '0 1px 4px rgba(0, 0, 0, 0.06)',
                 transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                position: 'relative',
-                marginTop: editMode && hasUnsavedChanges ? '5rem' : '0'
+                position: 'sticky',
+                top: editMode && hasUnsavedChanges ? '5rem' : '0',
+                zIndex: 900,
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)'
             }}>
                 <h2 style={{ 
                     margin: 0, 
