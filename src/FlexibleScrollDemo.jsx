@@ -6,6 +6,7 @@ import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { Dropdown } from 'primereact/dropdown';
 import { Calendar } from 'primereact/calendar';
+import { SpeedDial } from 'primereact/speeddial';
 import { CustomerService } from './service/CustomerService';
 import { ImageLightbox } from './components/ImageLightbox';
 import MiniMap from './components/MiniMap';
@@ -343,6 +344,8 @@ export default function FlexibleScrollDemo() {
     const [dialogData, setDialogData] = useState([]);
     const [currentRouteId, setCurrentRouteId] = useState(null);
     const [currentRouteName, setCurrentRouteName] = useState('');
+    const [currentRouteWarehouse, setCurrentRouteWarehouse] = useState('');
+    const [currentRouteShift, setCurrentRouteShift] = useState('');
     
     // Global frozen row data - fetched from database (PUBLIC/SHARED)
     // This will be loaded from database with a special ID or flag
@@ -460,8 +463,12 @@ export default function FlexibleScrollDemo() {
     // Each user can save their own order presets
     const [savePresetDialogVisible, setSavePresetDialogVisible] = useState(false);
     const [presetName, setPresetName] = useState('');
+    const [presetIsPublic, setPresetIsPublic] = useState(false);
     const [savedPresets, setSavedPresets] = useState([]);
     const [presetsListVisible, setPresetsListVisible] = useState(false);
+    const [presetPreviewMode, setPresetPreviewMode] = useState(false);
+    const [activePresetId, setActivePresetId] = useState(null);
+    const [presetSpeedDialVisible, setPresetSpeedDialVisible] = useState(null); // ID of preset with visible speed dial
     
     // Delete Confirmation State
     const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
@@ -533,6 +540,18 @@ export default function FlexibleScrollDemo() {
     // Link Confirmation Dialog State
     const [linkConfirmVisible, setLinkConfirmVisible] = useState(false);
     const [pendingLinkData, setPendingLinkData] = useState({ url: '', type: '' });
+    
+    // Action Confirmation Modal State (untuk shortcuts Google Maps, Waze, Website, dll)
+    const [actionConfirmVisible, setActionConfirmVisible] = useState(false);
+    const [actionConfirmData, setActionConfirmData] = useState({
+        icon: '',
+        title: '',
+        message: '',
+        details: {},
+        action: null,
+        buttonLabel: 'Open',
+        buttonColor: '#3b82f6'
+    });
     
     // Track modified rows
     const [modifiedRows, setModifiedRows] = useState(new Set());
@@ -633,6 +652,65 @@ export default function FlexibleScrollDemo() {
     // Update Notification State
     const [showUpdateBanner, setShowUpdateBanner] = useState(false);
     const APP_VERSION = '1.0.1'; // Increment this when pushing updates
+
+    // QR Code Scanning Function - Defined early to avoid reference errors
+    const handleScanQrCode = React.useCallback(async (qrImageUrl, destinationUrl) => {
+        setScanningQrCode(true);
+        setScannedUrl(''); // Reset
+        
+        try {
+            let imageSource = qrImageUrl;
+            
+            // Scanning QR code from image
+            
+            // If it's a remote URL, handle CORS
+            if (imageSource.startsWith('http')) {
+                try {
+                    const response = await fetch(imageSource);
+                    if (response.ok) {
+                        imageSource = await response.blob();
+                    }
+                } catch (e) {
+                    console.warn('Could not fetch remote image, trying direct scan:', e);
+                }
+            }
+            
+            // Try to decode QR code from the image using QrScanner
+            const result = await QrScanner.scanImage(imageSource, { 
+                returnDetailedScanResult: true 
+            });
+            
+            // QR code scanned successfully
+            
+            let targetUrl = result.data;
+            
+            // If not a URL, search on Google
+            if (!targetUrl.match(/^https?:\/\//)) {
+                if (targetUrl.includes('.') && !targetUrl.includes(' ')) {
+                    targetUrl = `https://${targetUrl}`;
+                } else {
+                    targetUrl = `https://www.google.com/search?q=${encodeURIComponent(targetUrl)}`;
+                }
+            }
+            
+            // Store the scanned URL and show result dialog
+            setScannedUrl(targetUrl);
+            setScanningQrCode(false);
+            setQrResultDialogVisible(true);
+                
+        } catch (error) {
+            console.error('❌ QR scanning error:', error);
+            setScanningQrCode(false);
+            
+            // Fallback: If have destination URL, use it
+            if (destinationUrl) {
+                setScannedUrl(destinationUrl);
+                setQrResultDialogVisible(true);
+            } else {
+                alert('Could not read QR code from the image. Please check if the image contains a valid QR code.');
+            }
+        }
+    }, []);
 
     // Calculate dynamic table width based on visible columns
     const calculateTableWidth = () => {
@@ -919,7 +997,7 @@ export default function FlexibleScrollDemo() {
             }, 300);
             return () => clearTimeout(timer);
         }
-    }, [qrCodeDialogVisible, editMode, qrCodeImageUrl]);
+    }, [qrCodeDialogVisible, editMode, qrCodeImageUrl, qrCodeDestinationUrl, handleScanQrCode]);
     
     // Apply dark mode to body class and PrimeReact theme
     useEffect(() => {
@@ -1175,6 +1253,8 @@ export default function FlexibleScrollDemo() {
                                 setModifiedRows(new Set());
                                 setCurrentRouteId(null);
                                 setCurrentRouteName('');
+                                setCurrentRouteWarehouse('');
+                                setCurrentRouteShift('');
                             }, 300); // Delay to allow closing animation
                         }} 
                         size="small"
@@ -1887,64 +1967,7 @@ export default function FlexibleScrollDemo() {
         }
     };
     
-    // Handle QR code scanning - button click version
-    const handleScanQrCode = async (qrImageUrl, destinationUrl) => {
-        setScanningQrCode(true);
-        setScannedUrl(''); // Reset
-        
-        try {
-            let imageSource = qrImageUrl;
-            
-            // Scanning QR code from image
-            
-            // If it's a remote URL, handle CORS
-            if (imageSource.startsWith('http')) {
-                try {
-                    const response = await fetch(imageSource);
-                    if (response.ok) {
-                        imageSource = await response.blob();
-                    }
-                } catch (e) {
-                    console.warn('Could not fetch remote image, trying direct scan:', e);
-                }
-            }
-            
-            // Try to decode QR code from the image using QrScanner
-            const result = await QrScanner.scanImage(imageSource, { 
-                returnDetailedScanResult: true 
-            });
-            
-            // QR code scanned successfully
-            
-            let targetUrl = result.data;
-            
-            // If not a URL, search on Google
-            if (!targetUrl.match(/^https?:\/\//)) {
-                if (targetUrl.includes('.') && !targetUrl.includes(' ')) {
-                    targetUrl = `https://${targetUrl}`;
-                } else {
-                    targetUrl = `https://www.google.com/search?q=${encodeURIComponent(targetUrl)}`;
-                }
-            }
-            
-            // Store the scanned URL and show result dialog
-            setScannedUrl(targetUrl);
-            setScanningQrCode(false);
-            setQrResultDialogVisible(true);
-                
-        } catch (error) {
-            console.error('❌ QR scanning error:', error);
-            setScanningQrCode(false);
-            
-            // Fallback: If have destination URL, use it
-            if (destinationUrl) {
-                setScannedUrl(destinationUrl);
-                setQrResultDialogVisible(true);
-            } else {
-                alert('Could not read QR code from the image. Please check if the image contains a valid QR code.');
-            }
-        }
-    };
+    // Note: handleScanQrCode is now defined earlier using React.useCallback to avoid reference errors
 
     // Handle link opening with confirmation
     const handleOpenLink = (url, type) => {
@@ -2328,6 +2351,23 @@ export default function FlexibleScrollDemo() {
         setDialogData(sortedData);
         setHasUnsavedChanges(true);
         setCustomSortMode(false);
+        
+        // Auto-save to active preset if in preview mode
+        if (presetPreviewMode && activePresetId) {
+            const updatedPresets = savedPresets.map(p => {
+                if (p.id === activePresetId) {
+                    return { ...p, sortOrders: { ...sortOrders } };
+                }
+                return p;
+            });
+            setSavedPresets(updatedPresets);
+            localStorage.setItem('sortPresets', JSON.stringify(updatedPresets));
+        }
+        
+        // Exit preview mode after applying
+        setPresetPreviewMode(false);
+        setActivePresetId(null);
+        
         setSortOrders({});
         setIsCustomSorted(true);
         // Save custom sort state to localStorage PER ROUTE
@@ -2363,6 +2403,7 @@ export default function FlexibleScrollDemo() {
             routeId: currentRouteId,
             routeName: currentRouteName,
             sortOrders: { ...sortOrders },
+            isPublic: presetIsPublic,
             createdAt: new Date().toISOString()
         };
         
@@ -2376,6 +2417,7 @@ export default function FlexibleScrollDemo() {
         // Close dialog and reset
         setSavePresetDialogVisible(false);
         setPresetName('');
+        setPresetIsPublic(false);
         
         alert(`✅ Preset "${preset.name}" saved successfully!`);
     };
@@ -2387,13 +2429,51 @@ export default function FlexibleScrollDemo() {
             return;
         }
         
-        // Apply the saved sort orders
+        // Enter preview mode first
+        setSortOrders(preset.sortOrders);
+        setCustomSortMode(true);
+        setActiveFunction('setOrder');
+        setPresetPreviewMode(true);
+        setActivePresetId(preset.id);
+        setPresetsListVisible(false);
+        
+        // Show info that user is in preview mode
+        alert(`👁️ Preview Mode: "${preset.name}"\n\nClick Apply in Set Order to confirm changes.\nAny changes will auto-save to this preset.`);
+    };
+    
+    const handlePresetPreview = (preset) => {
+        // Same as apply but emphasize it's preview
+        handleApplyPreset(preset);
+    };
+    
+    const handleTogglePresetVisibility = (preset) => {
+        const updatedPresets = savedPresets.map(p => {
+            if (p.id === preset.id) {
+                return { ...p, isPublic: !p.isPublic };
+            }
+            return p;
+        });
+        setSavedPresets(updatedPresets);
+        localStorage.setItem('sortPresets', JSON.stringify(updatedPresets));
+        
+        alert(`✅ Preset "${preset.name}" is now ${!preset.isPublic ? 'PUBLIC' : 'PRIVATE'}!`);
+    };
+    
+    const handleEditPreset = (preset) => {
+        // Load preset data for editing
+        setPresetName(preset.name);
+        setPresetIsPublic(preset.isPublic || false);
         setSortOrders(preset.sortOrders);
         setCustomSortMode(true);
         setActiveFunction('setOrder');
         setPresetsListVisible(false);
         
-        alert(`✅ Preset "${preset.name}" loaded! Click Apply to sort the table.`);
+        // Delete old preset (will save new one when user clicks save)
+        const updatedPresets = savedPresets.filter(p => p.id !== preset.id);
+        setSavedPresets(updatedPresets);
+        localStorage.setItem('sortPresets', JSON.stringify(updatedPresets));
+        
+        alert(`✏️ Editing preset "${preset.name}"\n\nMake your changes and save again.`);
     };
     
     const handleDeletePreset = (presetId) => {
@@ -2404,6 +2484,12 @@ export default function FlexibleScrollDemo() {
         const updatedPresets = savedPresets.filter(p => p.id !== presetId);
         setSavedPresets(updatedPresets);
         localStorage.setItem('sortPresets', JSON.stringify(updatedPresets));
+        
+        // If deleting active preset, exit preview mode
+        if (activePresetId === presetId) {
+            setPresetPreviewMode(false);
+            setActivePresetId(null);
+        }
         
         alert('✅ Preset deleted successfully!');
     };
@@ -3068,6 +3154,8 @@ export default function FlexibleScrollDemo() {
                                 // Set new route context FIRST
                                 setCurrentRouteId(rowData.id);
                                 setCurrentRouteName(rowData.route);
+                                setCurrentRouteWarehouse(rowData.warehouse || '');
+                                setCurrentRouteShift(rowData.shift || '');
                                 
                                 CustomerService.getDetailData(rowData.id).then((data) => {
                                     const sortedData = sortDialogData(data);
@@ -3153,6 +3241,8 @@ export default function FlexibleScrollDemo() {
                             onClick={() => {
                                 setCurrentRouteId(rowData.id);
                                 setCurrentRouteName(rowData.route);
+                                setCurrentRouteWarehouse(rowData.warehouse || '');
+                                setCurrentRouteShift(rowData.shift || '');
                                 
                                 // Reset states for new route
                                 setCustomSortMode(false);
@@ -4026,7 +4116,18 @@ export default function FlexibleScrollDemo() {
                                                 }} 
                                             />
                                         )}
-                                        <span style={{ fontSize: deviceInfo.isMobile ? '0.9rem' : '1rem' }}>Route {currentRouteName}</span>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                                            <span style={{ fontSize: deviceInfo.isMobile ? '0.9rem' : '1rem' }}>Route {currentRouteName}</span>
+                                            {(currentRouteWarehouse || currentRouteShift) && (
+                                                <span style={{ 
+                                                    fontSize: '0.7rem',
+                                                    color: isDark ? '#94a3b8' : '#64748b',
+                                                    fontWeight: '500'
+                                                }}>
+                                                    {currentRouteWarehouse} - {currentRouteShift}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                     
                                     {/* Search and Function Button */}
@@ -4338,12 +4439,12 @@ export default function FlexibleScrollDemo() {
                         })()
                     }
                     visible={dialogVisible} 
-                    style={{ width: dialogMaximized ? '95vw' : deviceInfo.dialogWidth }} 
+                    style={{ width: dialogMaximized ? '100vw' : deviceInfo.dialogWidth }} 
                     modal
                     closable={false}
                     closeOnEscape
                     dismissableMask 
-                    contentStyle={{ height: dialogMaximized ? '90vh' : (deviceInfo.isMobile ? '400px' : '500px') }} 
+                    contentStyle={{ height: dialogMaximized ? 'calc(100vh - 120px)' : (deviceInfo.isMobile ? '400px' : '500px') }} 
                     onHide={() => {
                         setDialogVisible(false);
                         // Clear dialog state completely when closing
@@ -5435,11 +5536,22 @@ export default function FlexibleScrollDemo() {
                                                     e.currentTarget.style.boxShadow = 'none';
                                                 }}
                                                 onClick={() => {
-                                                    const confirmed = window.confirm(`🗺️ Open Google Maps?\n\nLocation: ${selectedRowInfo.location || 'Unknown'}\nCoordinates: ${selectedRowInfo.latitude}, ${selectedRowInfo.longitude}`);
-                                                    if (confirmed) {
-                                                        const url = `https://www.google.com/maps/search/?api=1&query=${selectedRowInfo.latitude},${selectedRowInfo.longitude}`;
-                                                        window.open(url, '_blank');
-                                                    }
+                                                    setActionConfirmData({
+                                                        icon: '/Gmaps.png',
+                                                        title: 'Open Google Maps',
+                                                        message: 'Navigate to this location?',
+                                                        details: {
+                                                            Location: selectedRowInfo.location || 'Unknown',
+                                                            Coordinates: `${selectedRowInfo.latitude}, ${selectedRowInfo.longitude}`
+                                                        },
+                                                        action: () => {
+                                                            const url = `https://www.google.com/maps/search/?api=1&query=${selectedRowInfo.latitude},${selectedRowInfo.longitude}`;
+                                                            window.open(url, '_blank');
+                                                        },
+                                                        buttonLabel: 'Open Maps',
+                                                        buttonColor: '#10b981'
+                                                    });
+                                                    setActionConfirmVisible(true);
                                                 }}
                                             >
                                                 <img 
@@ -5481,11 +5593,22 @@ export default function FlexibleScrollDemo() {
                                                     e.currentTarget.style.boxShadow = 'none';
                                                 }}
                                                 onClick={() => {
-                                                    const confirmed = window.confirm(`🚗 Open Waze Navigation?\n\nLocation: ${selectedRowInfo.location || 'Unknown'}\nCoordinates: ${selectedRowInfo.latitude}, ${selectedRowInfo.longitude}`);
-                                                    if (confirmed) {
-                                                        const url = `https://waze.com/ul?ll=${selectedRowInfo.latitude},${selectedRowInfo.longitude}&navigate=yes`;
-                                                        window.open(url, '_blank');
-                                                    }
+                                                    setActionConfirmData({
+                                                        icon: '/waze.svg',
+                                                        title: 'Open Waze Navigation',
+                                                        message: 'Navigate with Waze?',
+                                                        details: {
+                                                            Location: selectedRowInfo.location || 'Unknown',
+                                                            Coordinates: `${selectedRowInfo.latitude}, ${selectedRowInfo.longitude}`
+                                                        },
+                                                        action: () => {
+                                                            const url = `https://waze.com/ul?ll=${selectedRowInfo.latitude},${selectedRowInfo.longitude}&navigate=yes`;
+                                                            window.open(url, '_blank');
+                                                        },
+                                                        buttonLabel: 'Open Waze',
+                                                        buttonColor: '#06b6d4'
+                                                    });
+                                                    setActionConfirmVisible(true);
                                                 }}
                                             >
                                                 <img 
@@ -5541,11 +5664,21 @@ export default function FlexibleScrollDemo() {
                                                         setWebsiteLinkInput(selectedRowInfo.websiteLink || '');
                                                         setWebsiteLinkDialogVisible(true);
                                                     } else if (selectedRowInfo.websiteLink) {
-                                                        // View mode: Open link with confirmation
-                                                        const confirmed = window.confirm(`🌐 Open Website?\n\nURL: ${selectedRowInfo.websiteLink}`);
-                                                        if (confirmed) {
-                                                            handleOpenLink(selectedRowInfo.websiteLink, 'Website');
-                                                        }
+                                                        // View mode: Open link with modal
+                                                        setActionConfirmData({
+                                                            icon: 'pi-globe',
+                                                            title: 'Open Website',
+                                                            message: 'Visit this website?',
+                                                            details: {
+                                                                URL: selectedRowInfo.websiteLink
+                                                            },
+                                                            action: () => {
+                                                                handleOpenLink(selectedRowInfo.websiteLink, 'Website');
+                                                            },
+                                                            buttonLabel: 'Open Website',
+                                                            buttonColor: '#10b981'
+                                                        });
+                                                        setActionConfirmVisible(true);
                                                     }
                                                 }}
                                             >
@@ -5606,42 +5739,52 @@ export default function FlexibleScrollDemo() {
                                         borderRadius: '6px',
                                         border: 'none',
                                         padding: '3px',
-                                        cursor: 'pointer',
+                                        cursor: scanningQrCode ? 'wait' : 'pointer',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         backgroundColor: 'transparent',
                                         transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                                        boxSizing: 'border-box'
+                                        boxSizing: 'border-box',
+                                        position: 'relative'
                                     }}
                                     onMouseEnter={(e) => {
-                                        e.currentTarget.style.transform = 'scale(1.1)';
-                                        e.currentTarget.style.boxShadow = isDark ? '0 4px 8px rgba(255, 255, 255, 0.3)' : '0 4px 8px rgba(0, 0, 0, 0.3)';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.transform = 'scale(1)';
-                                        e.currentTarget.style.boxShadow = 'none';
-                                    }}
-                                    onClick={() => {
-                                        // View mode: Auto-scan QR code and open URL with confirmation
-                                        if (selectedRowInfo.qrCodeImageUrl) {
-                                            const confirmed = window.confirm(`📱 Scan QR Code and open destination?\n\nDestination: ${selectedRowInfo.qrCodeDestinationUrl || 'Unknown'}`);
-                                            if (confirmed) {
-                                                handleScanQrCode(selectedRowInfo.qrCodeImageUrl, selectedRowInfo.qrCodeDestinationUrl);
-                                            }
+                                        if (!scanningQrCode) {
+                                            e.currentTarget.style.transform = 'scale(1.1)';
+                                            e.currentTarget.style.boxShadow = isDark ? '0 4px 8px rgba(255, 255, 255, 0.3)' : '0 4px 8px rgba(0, 0, 0, 0.3)';
                                         }
                                     }}
+                                    onMouseLeave={(e) => {
+                                        if (!scanningQrCode) {
+                                            e.currentTarget.style.transform = 'scale(1)';
+                                            e.currentTarget.style.boxShadow = 'none';
+                                        }
+                                    }}
+                                    onClick={() => {
+                                        // View mode: Auto-scan QR code without confirmation
+                                        if (selectedRowInfo.qrCodeImageUrl && !scanningQrCode) {
+                                            handleScanQrCode(selectedRowInfo.qrCodeImageUrl, selectedRowInfo.qrCodeDestinationUrl);
+                                        }
+                                    }}
+                                    disabled={scanningQrCode}
                                 >
-                                    <img 
-                                        src="/QRcodewoi.png" 
-                                        alt="QR Code" 
-                                        style={{ 
-                                            width: '100%', 
-                                            height: '100%',
-                                            objectFit: 'contain',
-                                            filter: isDark ? 'brightness(0) saturate(100%) invert(100%)' : 'brightness(0) saturate(100%)'
-                                        }} 
-                                    />
+                                    {scanningQrCode ? (
+                                        <i className="pi pi-spin pi-spinner" style={{ 
+                                            fontSize: '24px',
+                                            color: isDark ? '#ffffff' : '#000000'
+                                        }}></i>
+                                    ) : (
+                                        <img 
+                                            src="/QRcodewoi.png" 
+                                            alt="QR Code" 
+                                            style={{ 
+                                                width: '100%', 
+                                                height: '100%',
+                                                objectFit: 'contain',
+                                                filter: isDark ? 'brightness(0) saturate(100%) invert(100%)' : 'brightness(0) saturate(100%)'
+                                            }} 
+                                        />
+                                    )}
                                 </button>
                             )
                         )}
@@ -5692,10 +5835,21 @@ export default function FlexibleScrollDemo() {
                                                     }}
                                                     onClick={() => {
                                                         const code = selectedRowInfo?.code || '0000';
-                                                        const confirmed = window.confirm(`🏪 Open FamilyMart Refill Service?\n\nLocation Code: ${code}\nURL: ${familyMartLink}`);
-                                                        if (confirmed) {
-                                                            window.open(familyMartLink, '_blank');
-                                                        }
+                                                        setActionConfirmData({
+                                                            icon: '/FamilyMart.png',
+                                                            title: 'FamilyMart Refill Service',
+                                                            message: 'Open refill service page?',
+                                                            details: {
+                                                                'Location Code': code,
+                                                                URL: familyMartLink
+                                                            },
+                                                            action: () => {
+                                                                window.open(familyMartLink, '_blank');
+                                                            },
+                                                            buttonLabel: 'Open Service',
+                                                            buttonColor: '#14b8a6'
+                                                        });
+                                                        setActionConfirmVisible(true);
                                                     }}
                                                 >
                                                     <img 
@@ -5740,10 +5894,20 @@ export default function FlexibleScrollDemo() {
                                                     e.currentTarget.style.boxShadow = 'none';
                                                 }}
                                                 onClick={() => {
-                                                    const confirmed = window.confirm(`📞 Call this number?\n\nPhone: ${selectedRowInfo.phone}`);
-                                                    if (confirmed) {
-                                                        window.location.href = `tel:${selectedRowInfo.phone}`;
-                                                    }
+                                                    setActionConfirmData({
+                                                        icon: 'pi-phone',
+                                                        title: 'Call Phone Number',
+                                                        message: 'Make a call to this number?',
+                                                        details: {
+                                                            Phone: selectedRowInfo.phone
+                                                        },
+                                                        action: () => {
+                                                            window.location.href = `tel:${selectedRowInfo.phone}`;
+                                                        },
+                                                        buttonLabel: 'Call Now',
+                                                        buttonColor: '#059669'
+                                                    });
+                                                    setActionConfirmVisible(true);
                                                 }}
                                             >
                                                 <i className="pi pi-phone"></i>
@@ -7170,7 +7334,13 @@ export default function FlexibleScrollDemo() {
                                 { key: 'longitude', label: 'Longitude' },
                                 { key: 'address', label: 'Address' },
                                 { key: 'image', label: 'Image' }
-                            ].map(col => (
+                            ].filter(col => {
+                                // Hanya show latitude, longitude, address toggle dalam edit mode
+                                if (['latitude', 'longitude', 'address'].includes(col.key)) {
+                                    return editMode;
+                                }
+                                return true;
+                            }).map(col => (
                                 <div key={col.key} style={{
                                     display: 'flex',
                                     alignItems: 'center',
@@ -8298,12 +8468,71 @@ export default function FlexibleScrollDemo() {
                                 width: '100%',
                                 backgroundColor: isDark ? '#1f2937' : '#ffffff',
                                 color: isDark ? '#ffffff' : '#000000',
-                                border: isDark ? '1px solid #374151' : '1px solid #d1d5db'
+                                border: isDark ? '1px solid #374151' : '1px solid #d1d5db',
+                                marginBottom: '1rem'
                             }}
                             autoFocus
                         />
+                        
+                        {/* Public/Private Toggle */}
                         <div style={{
-                            marginTop: '1rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '0.75rem',
+                            backgroundColor: isDark ? '#1f2937' : '#f9fafb',
+                            borderRadius: '8px',
+                            border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
+                            marginBottom: '1rem'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <i className={`pi ${presetIsPublic ? 'pi-eye' : 'pi-lock'}`} style={{ 
+                                    color: presetIsPublic ? '#10b981' : '#94a3af',
+                                    fontSize: '1rem'
+                                }}></i>
+                                <span style={{ 
+                                    fontWeight: '600',
+                                    fontSize: '14px',
+                                    color: isDark ? '#e5e7eb' : '#1f2937'
+                                }}>
+                                    {presetIsPublic ? 'Public' : 'Private'}
+                                </span>
+                                <span style={{
+                                    fontSize: '12px',
+                                    color: isDark ? '#9ca3af' : '#6b7280'
+                                }}>
+                                    {presetIsPublic ? '(visible to all users)' : '(only you can see this)'}
+                                </span>
+                            </div>
+                            <div
+                                onClick={() => setPresetIsPublic(!presetIsPublic)}
+                                style={{
+                                    width: '48px',
+                                    height: '24px',
+                                    borderRadius: '12px',
+                                    backgroundColor: presetIsPublic ? '#10b981' : (isDark ? '#4b5563' : '#d1d5db'),
+                                    position: 'relative',
+                                    transition: 'all 0.3s ease',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        width: '20px',
+                                        height: '20px',
+                                        borderRadius: '50%',
+                                        backgroundColor: '#ffffff',
+                                        position: 'absolute',
+                                        top: '2px',
+                                        left: presetIsPublic ? '26px' : '2px',
+                                        transition: 'all 0.3s ease',
+                                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+                                    }}
+                                ></div>
+                            </div>
+                        </div>
+                        
+                        <div style={{
                             padding: '0.75rem',
                             backgroundColor: isDark ? '#1e3a5f' : '#dbeafe',
                             borderRadius: '8px',
@@ -8359,85 +8588,127 @@ export default function FlexibleScrollDemo() {
                     onHide={() => setPresetsListVisible(false)}
                 >
                     <div style={{ padding: '1rem' }}>
-                        {savedPresets.length === 0 ? (
+                        {savedPresets.filter(p => p.routeId === currentRouteId).length === 0 ? (
                             <div style={{ 
                                 textAlign: 'center', 
                                 padding: '2rem',
                                 color: isDark ? '#9ca3af' : '#6b7280'
                             }}>
                                 <i className="pi pi-inbox" style={{ fontSize: '3rem', marginBottom: '1rem', opacity: 0.5 }}></i>
-                                <p>No saved presets yet.</p>
+                                <p>No saved presets for this route yet.</p>
                                 <p style={{ fontSize: '13px', marginTop: '0.5rem' }}>
                                     Use "Set Order" and click "Save Preset" to save your custom sort orders.
                                 </p>
                             </div>
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                {savedPresets.map((preset) => (
-                                    <div 
-                                        key={preset.id}
-                                        style={{
-                                            backgroundColor: isDark ? '#1f2937' : '#f9fafb',
-                                            border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
-                                            borderRadius: '8px',
-                                            padding: '1rem',
-                                            display: 'flex',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center',
-                                            transition: 'all 0.2s ease'
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            e.currentTarget.style.backgroundColor = isDark ? '#374151' : '#f3f4f6';
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.currentTarget.style.backgroundColor = isDark ? '#1f2937' : '#f9fafb';
-                                        }}
-                                    >
-                                        <div style={{ flex: 1 }}>
-                                            <div style={{ 
-                                                fontWeight: 'bold',
-                                                fontSize: '14px',
-                                                color: isDark ? '#e5e7eb' : '#1f2937',
-                                                marginBottom: '0.25rem'
-                                            }}>
-                                                {preset.name}
+                                {savedPresets
+                                    .filter(preset => preset.routeId === currentRouteId)
+                                    .map((preset) => {
+                                    const speedDialItems = [
+                                        {
+                                            label: 'Apply',
+                                            icon: 'pi pi-play',
+                                            command: () => handleApplyPreset(preset)
+                                        },
+                                        {
+                                            label: 'Edit',
+                                            icon: 'pi pi-pencil',
+                                            command: () => handleEditPreset(preset)
+                                        },
+                                        {
+                                            label: preset.isPublic ? 'Make Private' : 'Make Public',
+                                            icon: preset.isPublic ? 'pi pi-lock' : 'pi pi-eye',
+                                            command: () => handleTogglePresetVisibility(preset)
+                                        },
+                                        {
+                                            label: 'Delete',
+                                            icon: 'pi pi-trash',
+                                            command: () => handleDeletePreset(preset.id)
+                                        }
+                                    ];
+                                    
+                                    return (
+                                        <div 
+                                            key={preset.id}
+                                            style={{
+                                                backgroundColor: isDark ? '#1f2937' : '#f9fafb',
+                                                border: `2px solid ${preset.isPublic ? '#10b981' : (isDark ? '#374151' : '#e5e7eb')}`,
+                                                borderRadius: '12px',
+                                                padding: '1rem',
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
+                                                position: 'relative',
+                                                transition: 'all 0.2s ease'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.backgroundColor = isDark ? '#374151' : '#f3f4f6';
+                                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.backgroundColor = isDark ? '#1f2937' : '#f9fafb';
+                                                e.currentTarget.style.transform = 'translateY(0)';
+                                                e.currentTarget.style.boxShadow = 'none';
+                                            }}
+                                        >
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ 
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.5rem',
+                                                    marginBottom: '0.25rem'
+                                                }}>
+                                                    <i className={`pi ${preset.isPublic ? 'pi-eye' : 'pi-lock'}`} style={{ 
+                                                        fontSize: '0.875rem',
+                                                        color: preset.isPublic ? '#10b981' : '#94a3af'
+                                                    }}></i>
+                                                    <div style={{ 
+                                                        fontWeight: 'bold',
+                                                        fontSize: '15px',
+                                                        color: isDark ? '#e5e7eb' : '#1f2937'
+                                                    }}>
+                                                        {preset.name}
+                                                    </div>
+                                                    {preset.isPublic && (
+                                                        <span style={{
+                                                            fontSize: '10px',
+                                                            fontWeight: '600',
+                                                            padding: '2px 6px',
+                                                            backgroundColor: '#10b981',
+                                                            color: '#ffffff',
+                                                            borderRadius: '4px'
+                                                        }}>
+                                                            PUBLIC
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div style={{ 
+                                                    fontSize: '12px',
+                                                    color: isDark ? '#9ca3af' : '#6b7280'
+                                                }}>
+                                                    Route: <strong>{preset.routeName}</strong>
+                                                </div>
+                                                <div style={{ 
+                                                    fontSize: '11px',
+                                                    color: isDark ? '#9ca3af' : '#6b7280',
+                                                    marginTop: '0.25rem'
+                                                }}>
+                                                    {Object.values(preset.sortOrders).filter(o => o !== '' && o !== undefined).length} items sorted • {new Date(preset.createdAt).toLocaleDateString()}
+                                                </div>
                                             </div>
-                                            <div style={{ 
-                                                fontSize: '12px',
-                                                color: isDark ? '#9ca3af' : '#6b7280'
-                                            }}>
-                                                Route: <strong>{preset.routeName}</strong>
-                                            </div>
-                                            <div style={{ 
-                                                fontSize: '11px',
-                                                color: isDark ? '#9ca3af' : '#6b7280',
-                                                marginTop: '0.25rem'
-                                            }}>
-                                                {Object.values(preset.sortOrders).filter(o => o !== '' && o !== undefined).length} items sorted
-                                            </div>
-                                        </div>
-                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                            <Button
-                                                icon="pi pi-check"
-                                                tooltip="Apply Preset"
-                                                tooltipOptions={{ position: 'top' }}
-                                                onClick={() => handleApplyPreset(preset)}
-                                                severity="success"
-                                                size="small"
-                                                text
+                                            <SpeedDial
+                                                model={speedDialItems}
+                                                direction="left"
+                                                showIcon="pi pi-bars"
+                                                hideIcon="pi pi-times"
+                                                buttonClassName="p-button-sm"
+                                                style={{ position: 'relative' }}
                                             />
-                                            <Button
-                                                icon="pi pi-trash"
-                                                tooltip="Delete Preset"
-                                                tooltipOptions={{ position: 'top' }}
-                                                onClick={() => handleDeletePreset(preset.id)}
-                                                severity="danger"
-                                                size="small"
-                                                text
-                                            />
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
@@ -8474,6 +8745,140 @@ export default function FlexibleScrollDemo() {
                     onColorChange={handleMarkerColorChange}
                     locationName={colorPickerLocationName}
                 />
+
+                {/* Action Confirmation Modal */}
+                <Dialog
+                    visible={actionConfirmVisible}
+                    onHide={() => setActionConfirmVisible(false)}
+                    style={{ width: deviceInfo.isMobile ? '90vw' : '450px' }}
+                    modal
+                    dismissableMask
+                    closable={false}
+                >
+                    <div style={{ 
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '1.5rem',
+                        padding: '1rem'
+                    }}>
+                        {/* Icon */}
+                        <div style={{
+                            width: '80px',
+                            height: '80px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>
+                            {actionConfirmData.icon.startsWith('pi-') ? (
+                                <i 
+                                    className={`pi ${actionConfirmData.icon}`}
+                                    style={{ 
+                                        fontSize: '4rem',
+                                        color: actionConfirmData.buttonColor
+                                    }}
+                                ></i>
+                            ) : (
+                                <img 
+                                    src={actionConfirmData.icon}
+                                    alt="Action Icon"
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'contain'
+                                    }}
+                                />
+                            )}
+                        </div>
+                        
+                        {/* Title */}
+                        <div style={{
+                            fontSize: '1.5rem',
+                            fontWeight: 'bold',
+                            textAlign: 'center',
+                            color: isDark ? '#f1f5f9' : '#1e293b'
+                        }}>
+                            {actionConfirmData.title}
+                        </div>
+                        
+                        {/* Message */}
+                        <div style={{
+                            fontSize: '1rem',
+                            textAlign: 'center',
+                            color: isDark ? '#94a3b8' : '#64748b'
+                        }}>
+                            {actionConfirmData.message}
+                        </div>
+                        
+                        {/* Details */}
+                        {Object.keys(actionConfirmData.details).length > 0 && (
+                            <div style={{
+                                width: '100%',
+                                backgroundColor: isDark ? '#1e293b' : '#f8fafc',
+                                borderRadius: '8px',
+                                padding: '1rem',
+                                border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`
+                            }}>
+                                {Object.entries(actionConfirmData.details).map(([key, value]) => (
+                                    <div key={key} style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        marginBottom: '0.5rem',
+                                        fontSize: '0.875rem'
+                                    }}>
+                                        <span style={{ 
+                                            fontWeight: '600',
+                                            color: isDark ? '#94a3b8' : '#64748b'
+                                        }}>
+                                            {key}:
+                                        </span>
+                                        <span style={{ 
+                                            fontWeight: '500',
+                                            color: isDark ? '#e2e8f0' : '#1e293b',
+                                            marginLeft: '1rem',
+                                            textAlign: 'right',
+                                            wordBreak: 'break-all'
+                                        }}>
+                                            {value}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        
+                        {/* Buttons */}
+                        <div style={{
+                            display: 'flex',
+                            gap: '0.75rem',
+                            width: '100%',
+                            marginTop: '0.5rem'
+                        }}>
+                            <Button
+                                label="Cancel"
+                                icon="pi pi-times"
+                                onClick={() => setActionConfirmVisible(false)}
+                                severity="secondary"
+                                outlined
+                                style={{ flex: 1 }}
+                            />
+                            <Button
+                                label={actionConfirmData.buttonLabel}
+                                icon="pi pi-check"
+                                onClick={() => {
+                                    if (actionConfirmData.action) {
+                                        actionConfirmData.action();
+                                    }
+                                    setActionConfirmVisible(false);
+                                }}
+                                style={{ 
+                                    flex: 1,
+                                    backgroundColor: actionConfirmData.buttonColor,
+                                    borderColor: actionConfirmData.buttonColor
+                                }}
+                            />
+                        </div>
+                    </div>
+                </Dialog>
 
             </div>
             
