@@ -1265,6 +1265,14 @@ export default function FlexibleScrollDemo() {
         setDialogData(sortDialogData(updatedData));
         setRouteHasUnsavedChanges(currentRouteId, true);
         
+        // Update selectedRowInfo if info modal is open for this row
+        if (infoDialogVisible && selectedRowInfo && selectedRowInfo.id === colorPickerRowId) {
+            setSelectedRowInfo(prev => ({
+                ...prev,
+                markerColor: color
+            }));
+        }
+        
         // Mark row as modified
         setModifiedRows(prev => new Set(prev).add(colorPickerRowId));
         
@@ -5310,22 +5318,83 @@ export default function FlexibleScrollDemo() {
                                 </div>
                             )}
                             
-                            {/* Marker Color Section - Temporarily Disabled */}
-                            {/* {!isRouteInfo && editMode && (
+                            {/* Marker Color Section */}
+                            {!isRouteInfo && editMode && (
                                 <div style={{ 
-                                    padding: '15px',
-                                    paddingTop: '0',
-                                    marginTop: '15px',
-                                    borderTop: isDark ? '1px solid #374151' : '1px solid #e9ecef'
+                                    backgroundColor: isDark ? 'transparent' : '#ffffff',
+                                    borderRadius: '8px',
+                                    border: isDark ? '1px solid #374151' : '1px solid #e9ecef',
+                                    margin: '15px',
+                                    marginTop: '0'
                                 }}>
-                                    <strong style={{ fontSize: '12px', color: isDark ? '#e5e5e5' : '#495057', display: 'block', marginBottom: '12px', textAlign: 'center' }}>
-                                        Marker Color
-                                    </strong>
-                                    <div style={{ display: 'flex', justifyContent: 'center' }}>
-                                        <Button label="Change Color" icon="pi pi-palette" size="small" />
+                                    <div style={{
+                                        padding: '10px 15px',
+                                        borderBottom: isDark ? '1px solid #374151' : '1px solid #e9ecef',
+                                        backgroundColor: isDark ? 'transparent' : '#f8f9fa',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center'
+                                    }}>
+                                        <strong style={{ fontSize: '12px', color: isDark ? '#e5e5e5' : '#495057' }}>
+                                            🎨 Marker Color
+                                        </strong>
+                                    </div>
+                                    <div style={{ padding: '15px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                                        <div style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '12px',
+                                            padding: '12px',
+                                            backgroundColor: isDark ? '#1e293b' : '#f8f9fa',
+                                            borderRadius: '8px',
+                                            border: isDark ? '1px solid #334155' : '1px solid #e9ecef',
+                                            width: '100%',
+                                            justifyContent: 'center'
+                                        }}>
+                                            <span style={{ fontSize: '11px', color: isDark ? '#d1d5db' : '#6b7280' }}>Current Color:</span>
+                                            <svg width="24" height="32" viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg">
+                                                <path 
+                                                    d="M12 0C5.4 0 0 5.4 0 12c0 8.1 12 20 12 20s12-11.9 12-20c0-6.6-5.4-12-12-12z" 
+                                                    fill={selectedRowInfo.markerColor || '#dc3545'}
+                                                    stroke="#fff"
+                                                    strokeWidth="1.5"
+                                                />
+                                                <circle cx="12" cy="12" r="4" fill="#fff"/>
+                                            </svg>
+                                            <span style={{ 
+                                                fontSize: '11px', 
+                                                color: isDark ? '#e5e5e5' : '#111827',
+                                                fontWeight: '600',
+                                                fontFamily: 'monospace'
+                                            }}>
+                                                {selectedRowInfo.markerColor || '#dc3545'}
+                                            </span>
+                                        </div>
+                                        <Button 
+                                            label="Change Marker Color" 
+                                            icon="pi pi-palette" 
+                                            size="small"
+                                            severity="info"
+                                            onClick={() => {
+                                                openColorPicker(selectedRowInfo.id, selectedRowInfo.location);
+                                            }}
+                                            style={{ width: '100%' }}
+                                        />
+                                        <div style={{ 
+                                            fontSize: '9px',
+                                            color: isDark ? '#93c5fd' : '#1e40af',
+                                            textAlign: 'center',
+                                            padding: '6px',
+                                            backgroundColor: isDark ? '#0f172a' : '#dbeafe',
+                                            borderRadius: '4px',
+                                            width: '100%'
+                                        }}>
+                                            <i className="pi pi-info-circle" style={{ marginRight: '4px' }}></i>
+                                            Marker color will be visible on the map
+                                        </div>
                                     </div>
                                 </div>
-                            )} */}
+                            )}
                             
                             {/* Shortcut Section */}
                             {!isRouteInfo && (
