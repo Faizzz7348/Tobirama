@@ -2921,6 +2921,31 @@ export default function FlexibleScrollDemo() {
         return <InputText type="text" value={options.value} onChange={(e) => options.editorCallback(e.target.value)} style={{ width: '100%' }} />;
     };
 
+    const dropdownEditor = (options, dropdownOptions) => {
+        return (
+            <Dropdown
+                value={options.value}
+                options={dropdownOptions}
+                onChange={(e) => options.editorCallback(e.value)}
+                placeholder="Select"
+                style={{ width: '100%' }}
+            />
+        );
+    };
+
+    // Dropdown options
+    const deliveryOptions = [
+        { label: 'Daily', value: 'Daily' },
+        { label: 'Weekday', value: 'Weekday' },
+        { label: 'Alt 1', value: 'Alt 1' },
+        { label: 'Alt 2', value: 'Alt 2' }
+    ];
+
+    const shiftOptions = [
+        { label: 'AM', value: 'AM' },
+        { label: 'PM', value: 'PM' }
+    ];
+
     const onCellEditComplete = (e) => {
         let { rowData, newValue, field } = e;
         
@@ -3905,7 +3930,7 @@ export default function FlexibleScrollDemo() {
                         align="center" 
                         alignHeader="center"
                         headerStyle={{ textAlign: 'center' }}
-                        editor={editMode ? textEditor : null}
+                        editor={editMode ? (options) => dropdownEditor(options, shiftOptions) : null}
                         onCellEditComplete={editMode ? onCellEditComplete : null}
                         style={{ width: '120px', minWidth: '120px' }}
                     />
@@ -4612,7 +4637,7 @@ export default function FlexibleScrollDemo() {
                                 align="center" 
                                 alignHeader="center"
                                 editor={(options) => {
-                                    return editMode ? textEditor(options) : null;
+                                    return editMode ? dropdownEditor(options, deliveryOptions) : null;
                                 }}
                                 onCellEditComplete={editMode ? onDialogCellEditComplete : null}
                                 style={{ width: `${columnWidths.delivery}px`, minWidth: '90px' }}
