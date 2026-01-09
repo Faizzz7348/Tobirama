@@ -38,9 +38,11 @@ const tableStyles = `
     }
     
     body.dark .p-datatable .p-datatable-thead > tr > th {
-        background-color: #0f172a !important;
-        color: #f1f5f9 !important;
+        background: linear-gradient(180deg, #0f2438 0%, #0b1a2a 100%) !important;
+        color: #7ab8d4 !important;
         border: none !important;
+        border-width: 0 !important;
+        box-shadow: none !important;
     }
     
     /* Table body row text size */
