@@ -5503,7 +5503,7 @@ export default function FlexibleScrollDemo() {
                             {!isRouteInfo && (
                                 <div style={{ padding: '15px', paddingTop: '0' }}>
                                     <strong style={{ fontSize: '12px', color: isDark ? '#e5e5e5' : '#495057', display: 'block', marginBottom: '12px', textAlign: 'center' }}>
-                                        🔗 Shortcuts
+                                        Shortcuts
                                     </strong>
                                     <div style={{ 
                                         display: 'flex', 

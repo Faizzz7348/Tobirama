@@ -208,7 +208,7 @@ export function TableRowModal({ rowData, trigger }) {
                 {/* Shortcuts Section */}
                 <div className="mt-4 pt-4 border-t border-gray-200 dark:border-neutral-700">
                   <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">
-                    🔗 Shortcuts
+                    Shortcuts
                   </h3>
                   <div className="flex flex-wrap gap-3">
                     {familyMartLink && (
