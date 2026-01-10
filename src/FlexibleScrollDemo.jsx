@@ -3466,14 +3466,14 @@ export default function FlexibleScrollDemo() {
             
             {/* Navigation Header - Sticky */}
             <div style={{
-                background: isDark ? '#0f172a' : '#e5e7eb',
+                background: isDark ? '#0f172a' : 'linear-gradient(135deg, rgba(224, 242, 254, 0.95) 0%, rgba(186, 230, 253, 0.9) 100%)',
                 padding: '1.5rem 2rem',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                borderBottom: isDark ? '1px solid #334155' : '1px solid #9ca3af',
+                borderBottom: isDark ? '1px solid #334155' : '1px solid rgba(6, 182, 212, 0.3)',
                 marginBottom: '2rem',
-                boxShadow: isDark ? '0 1px 4px rgba(0, 0, 0, 0.2)' : '0 1px 4px rgba(0, 0, 0, 0.06)',
+                boxShadow: isDark ? '0 1px 4px rgba(0, 0, 0, 0.2)' : '0 4px 12px rgba(6, 182, 212, 0.15)',
                 transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                 position: 'sticky',
                 top: editMode && hasUnsavedChanges ? '5rem' : '0',
@@ -3483,9 +3483,10 @@ export default function FlexibleScrollDemo() {
             }}>
                 <h2 style={{ 
                     margin: 0, 
-                    color: isDark ? '#f1f5f9' : '#111827',
+                    color: isDark ? '#f1f5f9' : '#0c4a6e',
                     fontSize: '25px',
-                    fontWeight: '700'
+                    fontWeight: '700',
+                    textShadow: isDark ? 'none' : '0 1px 2px rgba(6, 182, 212, 0.1)'
                 }}>{editMode ? 'Edit Mode' : 'Route Management'}</h2>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                     <Button 
@@ -3526,28 +3527,28 @@ export default function FlexibleScrollDemo() {
                             position: 'fixed',
                             top: editMode && hasUnsavedChanges ? 'calc(5rem + 80px)' : '80px',
                             right: '2rem',
-                            backgroundColor: isDark ? '#1e293b' : 'rgba(249, 250, 251, 0.7)',
+                            backgroundColor: isDark ? '#1e293b' : 'rgba(255, 255, 255, 0.85)',
                             backdropFilter: isDark ? 'none' : 'blur(30px) saturate(200%)',
                             WebkitBackdropFilter: isDark ? 'none' : 'blur(30px) saturate(200%)',
                             borderRadius: '16px',
                             boxShadow: isDark 
                                 ? '0 8px 24px rgba(0, 0, 0, 0.3)' 
-                                : '0 8px 32px rgba(31, 38, 135, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.8) inset',
+                                : '0 8px 32px rgba(6, 182, 212, 0.2), 0 0 0 1px rgba(6, 182, 212, 0.1) inset',
                             minWidth: '320px',
                             zIndex: 1000,
                             overflow: 'hidden',
                             animation: 'slideDown 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                            border: `1px solid ${isDark ? '#334155' : 'rgba(229, 231, 235, 0.5)'}`,
+                            border: `1px solid ${isDark ? '#334155' : 'rgba(6, 182, 212, 0.25)'}`,
                             background: isDark 
                                 ? '#1e293b'
-                                : 'linear-gradient(135deg, rgba(249, 250, 251, 0.8) 0%, rgba(255, 255, 255, 0.7) 100%)'
-                        }}>
+                                : 'linear-gradient(135deg, rgba(224, 242, 254, 0.9) 0%, rgba(255, 255, 255, 0.85) 100%)'
+                        }}>  
                             {/* Menu Header */}
                             <div style={{
                                 padding: '1.25rem 1.5rem',
                                 background: isDark 
                                     ? 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)'
-                                    : 'linear-gradient(135deg, rgba(209, 213, 219, 0.9) 0%, rgba(229, 231, 235, 0.8) 100%)',
+                                    : 'linear-gradient(135deg, #67e8f9 0%, #22d3ee 100%)',
                                 backdropFilter: isDark ? 'none' : 'blur(30px) saturate(200%)',
                                 WebkitBackdropFilter: isDark ? 'none' : 'blur(30px) saturate(200%)',
                                 border: isDark ? 'none' : '1px solid rgba(209, 213, 219, 0.5)',
@@ -3571,8 +3572,8 @@ export default function FlexibleScrollDemo() {
                                     <i className="pi pi-cog" style={{ fontSize: '1.5rem', color: isDark ? '#ffffff' : '#374151' }}></i>
                                 </div>
                                 <div>
-                                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700' }}>Settings</h3>
-                                    <p style={{ margin: 0, fontSize: '0.8rem', opacity: 0.9 }}>Manage your preferences</p>
+                                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700', color: isDark ? '#f1f5f9' : '#0e7490' }}>Settings</h3>
+                                    <p style={{ margin: 0, fontSize: '0.8rem', opacity: 0.9, color: isDark ? '#cbd5e1' : '#0c4a6e' }}>Manage your preferences</p>
                                 </div>
                             </div>
                             
@@ -3618,7 +3619,7 @@ export default function FlexibleScrollDemo() {
                                         backgroundColor: 'transparent',
                                         marginBottom: '0.5rem'
                                     }}
-                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDark ? '#334155' : '#f3f4f6'}
+                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDark ? '#334155' : 'rgba(207, 250, 254, 0.5)'}
                                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                 >
                                     <div style={{
@@ -3631,15 +3632,15 @@ export default function FlexibleScrollDemo() {
                                         justifyContent: 'center'
                                     }}>
                                         <i className={isDark ? 'pi pi-sun' : 'pi pi-moon'} style={{
-                                            color: isDark ? '#fbbf24' : '#3b82f6',
+                                            color: isDark ? '#fbbf24' : '#0891b2',
                                             fontSize: '1.1rem'
                                         }}></i>
                                     </div>
                                     <div style={{ flex: 1 }}>
-                                        <p style={{ margin: 0, fontWeight: '600', fontSize: '0.95rem', color: isDark ? '#f1f5f9' : '#1e293b' }}>
+                                        <p style={{ margin: 0, fontWeight: '600', fontSize: '0.95rem', color: isDark ? '#f1f5f9' : '#0c4a6e' }}>
                                             {isDark ? 'Light Mode' : 'Dark Mode'}
                                         </p>
-                                        <p style={{ margin: 0, fontSize: '0.75rem', color: isDark ? '#94a3b8' : '#64748b', marginTop: '0.15rem' }}>
+                                        <p style={{ margin: 0, fontSize: '0.75rem', color: isDark ? '#94a3b8' : '#0e7490', marginTop: '0.15rem' }}>
                                             Switch theme
                                         </p>
                                     </div>
@@ -3663,7 +3664,7 @@ export default function FlexibleScrollDemo() {
                                         marginBottom: '0.5rem',
                                         position: 'relative'
                                     }}
-                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDark ? '#334155' : '#f3f4f6'}
+                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDark ? '#334155' : 'rgba(207, 250, 254, 0.5)'}
                                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                 >
                                     <div style={{
@@ -3676,15 +3677,15 @@ export default function FlexibleScrollDemo() {
                                         justifyContent: 'center'
                                     }}>
                                         <i className="pi pi-history" style={{
-                                            color: '#6366f1',
+                                            color: '#0891b2',
                                             fontSize: '1.1rem'
                                         }}></i>
                                     </div>
                                     <div style={{ flex: 1 }}>
-                                        <p style={{ margin: 0, fontWeight: '600', fontSize: '0.95rem', color: isDark ? '#f1f5f9' : '#1e293b' }}>
+                                        <p style={{ margin: 0, fontWeight: '600', fontSize: '0.95rem', color: isDark ? '#f1f5f9' : '#0c4a6e' }}>
                                             Changelog
                                         </p>
-                                        <p style={{ margin: 0, fontSize: '0.75rem', color: isDark ? '#94a3b8' : '#64748b', marginTop: '0.15rem' }}>
+                                        <p style={{ margin: 0, fontSize: '0.75rem', color: isDark ? '#94a3b8' : '#0e7490', marginTop: '0.15rem' }}>
                                             View activity history
                                         </p>
                                     </div>
@@ -3724,7 +3725,7 @@ export default function FlexibleScrollDemo() {
                                         marginBottom: '0.5rem',
                                         opacity: (saving || modeTransitioning) ? 0.5 : 1
                                     }}
-                                    onMouseEnter={(e) => !(saving || modeTransitioning) && (e.currentTarget.style.backgroundColor = isDark ? '#334155' : '#f3f4f6')}
+                                    onMouseEnter={(e) => !(saving || modeTransitioning) && (e.currentTarget.style.backgroundColor = isDark ? '#334155' : 'rgba(207, 250, 254, 0.5)')}
                                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                 >
                                     <div style={{
@@ -3737,15 +3738,15 @@ export default function FlexibleScrollDemo() {
                                         justifyContent: 'center'
                                     }}>
                                         <i className={modeTransitioning ? 'pi pi-spin pi-spinner' : (editMode ? 'pi pi-eye' : 'pi pi-pencil')} style={{
-                                            color: modeTransitioning ? '#3b82f6' : (editMode ? '#10b981' : '#ef4444'),
+                                            color: modeTransitioning ? '#0891b2' : (editMode ? '#10b981' : '#ef4444'),
                                             fontSize: '1.1rem'
                                         }}></i>
                                     </div>
                                     <div style={{ flex: 1 }}>
-                                        <p style={{ margin: 0, fontWeight: '600', fontSize: '0.95rem', color: isDark ? '#f1f5f9' : '#1e293b' }}>
+                                        <p style={{ margin: 0, fontWeight: '600', fontSize: '0.95rem', color: isDark ? '#f1f5f9' : '#0c4a6e' }}>
                                             {modeTransitioning ? 'Switching...' : (editMode ? 'View Mode' : 'Edit Mode')}
                                         </p>
-                                        <p style={{ margin: 0, fontSize: '0.75rem', color: isDark ? '#94a3b8' : '#64748b', marginTop: '0.15rem' }}>
+                                        <p style={{ margin: 0, fontSize: '0.75rem', color: isDark ? '#94a3b8' : '#0e7490', marginTop: '0.15rem' }}>
                                             {modeTransitioning ? 'Please wait' : (editMode ? 'Switch to read-only' : 'Enable editing')}
                                         </p>
                                     </div>
@@ -3756,7 +3757,7 @@ export default function FlexibleScrollDemo() {
                                     <>
                                         <div style={{
                                             height: '1px',
-                                            background: isDark ? '#334155' : '#e5e7eb',
+                                            background: isDark ? '#334155' : 'rgba(6, 182, 212, 0.2)',
                                             margin: '0.75rem 0'
                                         }} />
                                         
@@ -3777,7 +3778,7 @@ export default function FlexibleScrollDemo() {
                                                 backgroundColor: 'transparent',
                                                 marginBottom: '0.5rem'
                                             }}
-                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDark ? '#334155' : '#f3f4f6'}
+                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDark ? '#334155' : 'rgba(207, 250, 254, 0.5)'}
                                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                         >
                                             <div style={{
@@ -3790,15 +3791,15 @@ export default function FlexibleScrollDemo() {
                                                 justifyContent: 'center'
                                             }}>
                                                 <i className="pi pi-lock" style={{
-                                                    color: '#a855f7',
+                                                    color: '#0891b2',
                                                     fontSize: '1.1rem'
                                                 }}></i>
                                             </div>
                                             <div style={{ flex: 1 }}>
-                                                <p style={{ margin: 0, fontWeight: '600', fontSize: '0.95rem', color: isDark ? '#f1f5f9' : '#1e293b' }}>
+                                                <p style={{ margin: 0, fontWeight: '600', fontSize: '0.95rem', color: isDark ? '#f1f5f9' : '#0c4a6e' }}>
                                                     Change Password
                                                 </p>
-                                                <p style={{ margin: 0, fontSize: '0.75rem', color: isDark ? '#94a3b8' : '#64748b', marginTop: '0.15rem' }}>
+                                                <p style={{ margin: 0, fontSize: '0.75rem', color: isDark ? '#94a3b8' : '#0e7490', marginTop: '0.15rem' }}>
                                                     Update security
                                                 </p>
                                             </div>
@@ -3842,7 +3843,7 @@ export default function FlexibleScrollDemo() {
                                                 <p style={{ margin: 0, fontWeight: '600', fontSize: '0.95rem', color: '#ef4444' }}>
                                                     Clear All Data
                                                 </p>
-                                                <p style={{ margin: 0, fontSize: '0.75rem', color: isDark ? '#94a3b8' : '#64748b', marginTop: '0.15rem' }}>
+                                                <p style={{ margin: 0, fontSize: '0.75rem', color: isDark ? '#94a3b8' : '#0e7490', marginTop: '0.15rem' }}>
                                                     Delete everything
                                                 </p>
                                             </div>
@@ -3855,7 +3856,7 @@ export default function FlexibleScrollDemo() {
                                     <>
                                         <div style={{
                                             height: '1px',
-                                            background: isDark ? '#334155' : '#e5e7eb',
+                                            background: isDark ? '#334155' : 'rgba(6, 182, 212, 0.2)',
                                             margin: '0.75rem 0'
                                         }} />
                                         
@@ -3904,9 +3905,9 @@ export default function FlexibleScrollDemo() {
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
                                                     gap: '0.5rem',
-                                                    background: isDark ? '#1e293b' : '#f1f5f9',
-                                                    border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                                                    color: isDark ? '#f1f5f9' : '#1e293b',
+                                                    background: isDark ? '#1e293b' : 'rgba(224, 242, 254, 0.5)',
+                                                    border: `1px solid ${isDark ? '#334155' : 'rgba(6, 182, 212, 0.3)'}`,
+                                                    color: isDark ? '#f1f5f9' : '#0c4a6e',
                                                     fontWeight: '600',
                                                     fontSize: '0.95rem',
                                                     opacity: saving ? 0.5 : 1
@@ -3930,8 +3931,8 @@ export default function FlexibleScrollDemo() {
                     top: '20px',
                     left: '50%',
                     transform: 'translateX(-50%)',
-                    backgroundColor: isDark ? '#1e3a8a' : '#dbeafe',
-                    border: `2px solid ${isDark ? '#3b82f6' : '#2563eb'}`,
+                    backgroundColor: isDark ? '#1e3a8a' : 'rgba(224, 242, 254, 0.95)',
+                    border: `2px solid ${isDark ? '#3b82f6' : '#06b6d4'}`,
                     borderRadius: '12px',
                     padding: '1rem 1.5rem',
                     boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
@@ -3940,24 +3941,25 @@ export default function FlexibleScrollDemo() {
                     alignItems: 'center',
                     gap: '1rem',
                     maxWidth: '90%',
-                    animation: 'slideDown 0.3s ease-out'
+                    animation: 'slideDown 0.3s ease-out',
+                    backdropFilter: 'blur(10px)'
                 }}>
                     <i className="pi pi-info-circle" style={{ 
                         fontSize: '1.5rem', 
-                        color: isDark ? '#60a5fa' : '#2563eb' 
+                        color: isDark ? '#60a5fa' : '#0891b2' 
                     }}></i>
                     <div style={{ flex: 1 }}>
                         <div style={{ 
                             fontWeight: '700', 
                             fontSize: '0.95rem',
-                            color: isDark ? '#e0f2fe' : '#1e3a8a',
+                            color: isDark ? '#e0f2fe' : '#0c4a6e',
                             marginBottom: '0.25rem'
                         }}>
                             App Ada Update!
                         </div>
                         <div style={{ 
                             fontSize: '0.85rem',
-                            color: isDark ? '#bae6fd' : '#1e40af'
+                            color: isDark ? '#bae6fd' : '#0e7490'
                         }}>
                             Sila refresh app untuk versi terkini
                         </div>
@@ -3971,7 +3973,7 @@ export default function FlexibleScrollDemo() {
                             size="small"
                             raised
                             style={{
-                                backgroundColor: isDark ? '#3b82f6' : '#2563eb',
+                                backgroundColor: isDark ? '#3b82f6' : '#0891b2',
                                 border: 'none',
                                 fontWeight: '600'
                             }}
@@ -3983,7 +3985,7 @@ export default function FlexibleScrollDemo() {
                             size="small"
                             text
                             style={{
-                                color: isDark ? '#94a3b8' : '#64748b'
+                                color: isDark ? '#94a3b8' : '#0e7490'
                             }}
                         />
                     </div>
@@ -8895,15 +8897,15 @@ export default function FlexibleScrollDemo() {
                 position: 'fixed',
                 bottom: '1rem',
                 left: '1rem',
-                backgroundColor: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-                border: `1px solid ${isDark ? '#334155' : '#e5e7eb'}`,
+                backgroundColor: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(224, 242, 254, 0.95)',
+                border: `1px solid ${isDark ? '#334155' : 'rgba(6, 182, 212, 0.3)'}`,
                 borderRadius: '12px',
                 padding: '0.75rem 1rem',
-                boxShadow: isDark ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 4px 12px rgba(0, 0, 0, 0.1)',
+                boxShadow: isDark ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 4px 12px rgba(6, 182, 212, 0.15)',
                 zIndex: 100,
                 backdropFilter: 'blur(8px)',
                 fontSize: '0.75rem',
-                color: isDark ? '#9ca3af' : '#6b7280',
+                color: isDark ? '#9ca3af' : '#0e7490',
                 fontWeight: '600',
                 display: 'flex',
                 alignItems: 'center',
@@ -8912,8 +8914,8 @@ export default function FlexibleScrollDemo() {
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <i className={`pi ${deviceInfo.isMobile ? 'pi-mobile' : deviceInfo.isTablet ? 'pi-tablet' : 'pi-desktop'}`} 
-                       style={{ fontSize: '1rem', color: isDark ? '#60a5fa' : '#3b82f6' }}></i>
-                    <span style={{ color: isDark ? '#e5e7eb' : '#374151', fontWeight: '700' }}>
+                       style={{ fontSize: '1rem', color: isDark ? '#60a5fa' : '#0891b2' }}></i>
+                    <span style={{ color: isDark ? '#e5e7eb' : '#0c4a6e', fontWeight: '700' }}>
                         {deviceInfo.deviceType.toUpperCase()}
                     </span>
                 </div>
