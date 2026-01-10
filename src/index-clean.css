@@ -176,7 +176,7 @@ body.p-overflow-hidden {
   color: #1a3a52;
   text-align: center !important;
   font-weight: 700;
-  font-size: 13px;
+  font-size: 12px;
   padding: 1.25rem 1rem !important;
   border: 0 !important;
   border-top: 0 !important;
@@ -256,7 +256,7 @@ body.dark .p-datatable .p-datatable-tbody > tr:hover {
   background-color: #ffffff;
   color: #1a3a52;
   text-align: center !important;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   padding: 0.875rem 1rem;
   border: 0 !important;
@@ -576,6 +576,38 @@ body.dark .p-dialog .p-dialog-header-icon:hover {
 .p-button:active {
   transform: translateY(0);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* Table action buttons - text only, no background/border */
+.p-datatable .p-datatable-tbody .p-button.p-button-text {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #3b82f6;
+  padding: 0.5rem 0.75rem !important;
+}
+
+.p-datatable .p-datatable-tbody .p-button.p-button-text:hover {
+  background: rgba(59, 130, 246, 0.1) !important;
+  box-shadow: none !important;
+  transform: none;
+}
+
+.p-datatable .p-datatable-tbody .p-button.p-button-text:active {
+  background: rgba(59, 130, 246, 0.15) !important;
+  box-shadow: none !important;
+}
+
+body.dark .p-datatable .p-datatable-tbody .p-button.p-button-text {
+  color: #60a5fa;
+}
+
+body.dark .p-datatable .p-datatable-tbody .p-button.p-button-text:hover {
+  background: rgba(96, 165, 250, 0.15) !important;
+}
+
+body.dark .p-datatable .p-datatable-tbody .p-button.p-button-text:active {
+  background: rgba(96, 165, 250, 0.2) !important;
 }
 
 /* Dropdown */
@@ -1151,5 +1183,82 @@ body.dark::before {
     radial-gradient(ellipse at 80% 80%, rgba(59, 130, 246, 0.04) 0%, transparent 50%);
   pointer-events: none;
   z-index: -1;
+}
+
+/* Saved preset speed dial styling */
+.preset-speeddial {
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.08));
+}
+
+.preset-speeddial .preset-speeddial-btn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #4b5563;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.preset-speeddial .preset-speeddial-btn .p-button-icon {
+  font-size: 1.05rem;
+}
+
+.preset-speeddial .preset-speeddial-btn:not(.p-disabled):hover {
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.12), rgba(99, 102, 241, 0.14)) !important;
+  color: #4338ca;
+  transform: translateY(-1px);
+}
+
+.preset-speeddial .preset-speeddial-btn:not(.p-disabled):active {
+  transform: translateY(0);
+  background: rgba(79, 70, 229, 0.18) !important;
+}
+
+.preset-speeddial .p-speeddial-list {
+  gap: 0.4rem;
+}
+
+.preset-speeddial .p-speeddial-action {
+  background: linear-gradient(135deg, #ffffff, #f8fafc);
+  color: #1f2937;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  width: 2.4rem;
+  height: 2.4rem;
+}
+
+.preset-speeddial .p-speeddial-action:hover {
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+  border-color: rgba(79, 70, 229, 0.35);
+  color: #312e81;
+}
+
+body.dark .preset-speeddial .preset-speeddial-btn {
+  color: #e5e7eb;
+  background: transparent !important;
+}
+
+body.dark .preset-speeddial .preset-speeddial-btn:not(.p-disabled):hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.18), rgba(79, 70, 229, 0.2)) !important;
+  color: #c4b5fd;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+}
+
+body.dark .preset-speeddial .p-speeddial-action {
+  background: linear-gradient(135deg, #0f172a, #111827);
+  color: #e5e7eb;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.45);
+}
+
+body.dark .preset-speeddial .p-speeddial-action:hover {
+  background: linear-gradient(135deg, #1f2937, #111827);
+  border-color: rgba(139, 92, 246, 0.4);
+  color: #c4b5fd;
 }
 

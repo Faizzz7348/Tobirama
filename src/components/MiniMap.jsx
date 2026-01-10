@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, LayersControl, ZoomControl } from 'react-leaflet';
 import { Dialog } from 'primereact/dialog';
 import { Button } from 'primereact/button';
+import { MultiStateCheckbox } from 'primereact/multistatecheckbox';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -24,7 +25,7 @@ const createColoredMarkerIcon = (color = '#dc3545') => {
     return L.divIcon({
         className: 'custom-marker-icon',
         html: `
-            <div style="position: relative;">
+            <div style="position: relative; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
                 <svg width="24" height="32" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg">
                     <path d="M15 0C8.925 0 4 4.925 4 11c0 8.25 11 29 11 29s11-20.75 11-29c0-6.075-4.925-11-11-11z" 
                           fill="${color}" 
@@ -53,9 +54,15 @@ function MapUpdater({ center, zoom }) {
     return null;
 }
 
-export default function MiniMap({ latitude, longitude, address, locations = [], style = {}, onMarkerColorChange }) {
+export default function MiniMap({ latitude, longitude, address, locations = [], style = {}, onMarkerColorChange, isDark = false }) {
     const [fullscreenVisible, setFullscreenVisible] = useState(false);
     const [addressExpanded, setAddressExpanded] = useState(false);
+    const [mapType, setMapType] = useState('street');
+    const mapTypeOptions = [
+        { label: 'Street', value: 'street', icon: 'pi pi-map' },
+        { label: 'Satellite', value: 'satellite', icon: 'pi pi-image' },
+        { label: 'Topographic', value: 'topographic', icon: 'pi pi-compass' }
+    ];
     
     // Default marker color
     const defaultMarkerColor = '#dc3545';
@@ -106,10 +113,48 @@ export default function MiniMap({ latitude, longitude, address, locations = [], 
                             longitude !== null && longitude !== undefined;
     }
 
+    const getTileLayerUrl = () => {
+        switch(mapType) {
+            case 'satellite':
+                return "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+            case 'topographic':
+                return "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png";
+            case 'dark':
+                return "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+            default:
+                return "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+        }
+    };
+
     return (
         <>
             {/* Mini Map Container */}
             <div style={{ position: 'relative', ...style }}>
+                {/* Single map-type toggle (MultiStateCheckbox) */}
+                <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 1001 }}>
+                    <MultiStateCheckbox
+                        value={mapType}
+                        options={mapTypeOptions}
+                        optionValue="value"
+                        className="maptype-toggle"
+                        onChange={(e) => setMapType(e.value)}
+                        tooltip={mapTypeOptions.find(o => o.value === mapType)?.label}
+                        tooltipOptions={{ position: 'bottom' }}
+                        style={{
+                            width: '40px',
+                            height: '40px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: '12px',
+                            background: 'transparent',
+                            border: 'none',
+                            boxShadow: 'none',
+                            color: isDark ? '#93c5fd' : '#374151'
+                        }}
+                    />
+                </div>
+
                 <MapContainer
                     center={center}
                     zoom={zoom}
@@ -117,8 +162,8 @@ export default function MiniMap({ latitude, longitude, address, locations = [], 
                         height: '250px', 
                         width: '100%', 
                         borderRadius: '12px',
-                        border: '2px solid rgba(0,0,0,0.1)',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                        border: `1px solid ${isDark ? 'rgba(59, 130, 246, 0.3)' : 'rgba(0,0,0,0.1)'}`,
+                        boxShadow: isDark ? '0 4px 12px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.1)'
                     }}
                     className="mini-map-container"
                     scrollWheelZoom={false}
@@ -132,8 +177,8 @@ export default function MiniMap({ latitude, longitude, address, locations = [], 
                     maxZoom={18}
                 >
                     <TileLayer
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        attribution={mapType === 'satellite' ? '&copy; <a href="https://www.esri.com">Esri</a>' : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}
+                        url={getTileLayerUrl()}
                     />
                     {isMultipleMarkers ? (
                         // Multiple markers
@@ -147,9 +192,16 @@ export default function MiniMap({ latitude, longitude, address, locations = [], 
                                     icon={createColoredMarkerIcon(loc.markerColor || defaultMarkerColor)}
                                 >
                                     <Popup>
-                                        <strong>{loc.location || `Location ${index + 1}`}</strong>
-                                        {loc.code && <><br />Code: {loc.code}</>}
-                                        {loc.address && <><br />{loc.address}</>}
+                                        <div style={{ minWidth: '200px' }}>
+                                            <strong style={{ fontSize: '13px', display: 'block', marginBottom: '6px' }}>
+                                                {loc.location || `Location ${index + 1}`}
+                                            </strong>
+                                            {loc.code && <div style={{ fontSize: '11px', color: '#666', marginBottom: '4px' }}>Code: {loc.code}</div>}
+                                            {loc.address && <div style={{ fontSize: '11px', color: '#666', marginBottom: '4px' }}>{loc.address}</div>}
+                                            <div style={{ fontSize: '10px', color: '#999', marginTop: '6px' }}>
+                                                Lat: {loc.latitude.toFixed(6)}, Lng: {loc.longitude.toFixed(6)}
+                                            </div>
+                                        </div>
                                     </Popup>
                                 </Marker>
                             ))
@@ -161,7 +213,14 @@ export default function MiniMap({ latitude, longitude, address, locations = [], 
                                 icon={createColoredMarkerIcon(locations[0]?.markerColor || defaultMarkerColor)}
                             >
                                 <Popup>
-                                    {address || 'Location'}
+                                    <div style={{ minWidth: '180px' }}>
+                                        <strong style={{ fontSize: '13px', display: 'block', marginBottom: '6px' }}>
+                                            {address || 'Location'}
+                                        </strong>
+                                        <div style={{ fontSize: '10px', color: '#999' }}>
+                                            Lat: {center[0].toFixed(6)}, Lng: {center[1].toFixed(6)}
+                                        </div>
+                                    </div>
                                 </Popup>
                             </Marker>
                         )
@@ -192,12 +251,12 @@ export default function MiniMap({ latitude, longitude, address, locations = [], 
                         className="map-address-caption"
                         style={{
                             marginTop: '10px',
-                            padding: '6px 8px',
-                            backgroundColor: 'transparent',
-                            borderRadius: '4px',
-                            fontSize: '10px',
+                            padding: '8px 12px',
+                            backgroundColor: isDark ? 'rgba(15, 23, 42, 0.7)' : 'rgba(255, 255, 255, 0.8)',
+                            borderRadius: '8px',
+                            fontSize: '11px',
                             fontFamily: "'Open Sans', sans-serif",
-                            color: 'var(--text-color)',
+                            color: isDark ? '#93c5fd' : '#1f2937',
                             textAlign: 'center',
                             cursor: 'pointer',
                             userSelect: 'none',
@@ -205,18 +264,21 @@ export default function MiniMap({ latitude, longitude, address, locations = [], 
                             alignItems: 'center',
                             justifyContent: 'center',
                             gap: '6px',
-                            transition: 'all 0.2s ease'
+                            transition: 'all 0.2s ease',
+                            border: `1px solid ${isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(0,0,0,0.1)'}`,
+                            backdropFilter: 'blur(8px)'
                         }}
                         onClick={() => setAddressExpanded(!addressExpanded)}
                     >
                         <i 
                             className={`pi ${addressExpanded ? 'pi-chevron-up' : 'pi-chevron-down'}`} 
                             style={{ 
-                                fontSize: '8px',
+                                fontSize: '9px',
                                 color: '#dc3545',
                                 transition: 'transform 0.2s ease'
                             }}
                         ></i>
+                        <i className="pi pi-map-marker" style={{ fontSize: '10px', color: '#dc3545' }}></i>
                         <span style={{
                             overflow: addressExpanded ? 'visible' : 'hidden',
                             textOverflow: addressExpanded ? 'clip' : 'ellipsis',
@@ -234,13 +296,14 @@ export default function MiniMap({ latitude, longitude, address, locations = [], 
                 {!hasValidCoordinates && (
                     <div className="map-info-box map-info-warning" style={{
                         marginTop: '10px',
-                        padding: '10px',
-                        backgroundColor: '#fff3cd',
+                        padding: '10px 12px',
+                        backgroundColor: isDark ? 'rgba(217, 119, 6, 0.15)' : '#fff3cd',
                         borderRadius: '8px',
                         fontSize: '12px',
-                        color: '#856404',
+                        color: isDark ? '#fbbf24' : '#856404',
                         textAlign: 'center',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        boxShadow: isDark ? '0 2px 4px rgba(0,0,0,0.2)' : '0 2px 4px rgba(0,0,0,0.1)',
+                        border: `1px solid ${isDark ? 'rgba(217, 119, 6, 0.3)' : 'rgba(0,0,0,0.1)'}`
                     }}>
                         <i className="pi pi-info-circle" style={{ marginRight: '5px', fontSize: '14px' }}></i>
                         {isMultipleMarkers ? 'No locations with coordinates found.' : 'No coordinates set. Showing default location (KL).'}
@@ -266,6 +329,31 @@ export default function MiniMap({ latitude, longitude, address, locations = [], 
                 contentStyle={{ height: 'calc(100% - 60px)', padding: 0, overflow: 'hidden' }}
                 className="fullscreen-map-dialog"
             >
+                {/* Fullscreen map-type toggle (MultiStateCheckbox) */}
+                <div style={{ position: 'absolute', top: '14px', left: '16px', zIndex: 1500 }}>
+                    <MultiStateCheckbox
+                        value={mapType}
+                        options={mapTypeOptions}
+                        optionValue="value"
+                        className="maptype-toggle"
+                        onChange={(e) => setMapType(e.value)}
+                        tooltip={mapTypeOptions.find(o => o.value === mapType)?.label}
+                        tooltipOptions={{ position: 'bottom' }}
+                        style={{
+                            width: '42px',
+                            height: '42px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: '12px',
+                            background: 'transparent',
+                            border: 'none',
+                            boxShadow: 'none',
+                            color: isDark ? '#93c5fd' : '#374151'
+                        }}
+                    />
+                </div>
+
                 <MapContainer
                     center={center}
                     zoom={zoom + 1}
@@ -277,26 +365,14 @@ export default function MiniMap({ latitude, longitude, address, locations = [], 
                     minZoom={6}
                     maxZoom={19}
                 >
-                    <LayersControl position="topright">
-                        <BaseLayer checked name="Street Map">
-                            <TileLayer
-                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                            />
-                        </BaseLayer>
-                        <BaseLayer name="Satellite View">
-                            <TileLayer
-                                attribution='&copy; <a href="https://www.esri.com">Esri</a>'
-                                url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                            />
-                        </BaseLayer>
-                        <BaseLayer name="Topographic">
-                            <TileLayer
-                                attribution='&copy; <a href="https://opentopomap.org">OpenTopoMap</a> contributors'
-                                url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
-                            />
-                        </BaseLayer>
-                    </LayersControl>
+                    <TileLayer
+                        attribution={
+                            mapType === 'satellite'
+                                ? '&copy; <a href="https://www.esri.com">Esri</a>'
+                                : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        }
+                        url={getTileLayerUrl()}
+                    />
                     <ZoomControl position="bottomright" />
                     <MapUpdater center={center} zoom={zoom + 1} />
                     {isMultipleMarkers ? (
@@ -311,13 +387,18 @@ export default function MiniMap({ latitude, longitude, address, locations = [], 
                                     icon={createColoredMarkerIcon(loc.markerColor || defaultMarkerColor)}
                                 >
                                     <Popup>
-                                        <strong>{loc.location || `Location ${index + 1}`}</strong>
-                                        {loc.code && <><br />Code: {loc.code}</>}
-                                        {loc.address && <><br />{loc.address}</>}
-                                        <br />
-                                        Lat: {loc.latitude.toFixed(6)}
-                                        <br />
-                                        Lng: {loc.longitude.toFixed(6)}
+                                        <div style={{ minWidth: '220px' }}>
+                                            <strong style={{ fontSize: '13px', display: 'block', marginBottom: '6px' }}>
+                                                {loc.location || `Location ${index + 1}`}
+                                            </strong>
+                                            {loc.code && <div style={{ fontSize: '11px', color: '#666', marginBottom: '4px' }}>Code: {loc.code}</div>}
+                                            {loc.address && <div style={{ fontSize: '11px', color: '#666', marginBottom: '4px' }}>{loc.address}</div>}
+                                            <div style={{ fontSize: '10px', color: '#999', marginTop: '6px' }}>
+                                                Lat: {loc.latitude.toFixed(6)}
+                                                <br />
+                                                Lng: {loc.longitude.toFixed(6)}
+                                            </div>
+                                        </div>
                                     </Popup>
                                 </Marker>
                             ))
@@ -329,11 +410,16 @@ export default function MiniMap({ latitude, longitude, address, locations = [], 
                                 icon={createColoredMarkerIcon(locations[0]?.markerColor || defaultMarkerColor)}
                             >
                                 <Popup>
-                                    <strong>{address || 'Location'}</strong>
-                                    <br />
-                                    Lat: {center[0].toFixed(6)}
-                                    <br />
-                                    Lng: {center[1].toFixed(6)}
+                                    <div style={{ minWidth: '200px' }}>
+                                        <strong style={{ fontSize: '13px', display: 'block', marginBottom: '6px' }}>
+                                            {address || 'Location'}
+                                        </strong>
+                                        <div style={{ fontSize: '10px', color: '#999' }}>
+                                            Lat: {center[0].toFixed(6)}
+                                            <br />
+                                            Lng: {center[1].toFixed(6)}
+                                        </div>
+                                    </div>
                                 </Popup>
                             </Marker>
                         )
@@ -346,7 +432,7 @@ export default function MiniMap({ latitude, longitude, address, locations = [], 
                         bottom: '30px',
                         left: '50%',
                         transform: 'translateX(-50%)',
-                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        backgroundColor: isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)',
                         padding: '12px 24px',
                         borderRadius: '12px',
                         boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
@@ -354,7 +440,8 @@ export default function MiniMap({ latitude, longitude, address, locations = [], 
                         maxWidth: '85%',
                         textAlign: 'center',
                         backdropFilter: 'blur(10px)',
-                        border: '1px solid rgba(0,0,0,0.1)'
+                        border: `1px solid ${isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(0,0,0,0.1)'}`,
+                        color: isDark ? '#93c5fd' : '#1f2937'
                     }}>
                         <i className="pi pi-map-marker" style={{ marginRight: '10px', color: '#dc3545', fontSize: '16px' }}></i>
                         <strong style={{ fontSize: '14px' }}>{address}</strong>
@@ -367,7 +454,7 @@ export default function MiniMap({ latitude, longitude, address, locations = [], 
                         bottom: '30px',
                         left: '50%',
                         transform: 'translateX(-50%)',
-                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        backgroundColor: isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)',
                         padding: '12px 24px',
                         borderRadius: '12px',
                         boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
@@ -375,8 +462,11 @@ export default function MiniMap({ latitude, longitude, address, locations = [], 
                         maxWidth: '85%',
                         textAlign: 'center',
                         backdropFilter: 'blur(10px)',
-                        border: '1px solid rgba(0,0,0,0.1)'
+                        border: `1px solid ${isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(0,0,0,0.1)'}`,
+                        color: isDark ? '#93c5fd' : '#1f2937'
                     }}>
+                        <i className="pi pi-map-marker" style={{ marginRight: '10px', color: '#06b6d4', fontSize: '16px' }}></i>
+                        <strong style={{ fontSize: '14px' }}>{locations.filter(loc => loc.latitude && loc.longitude).length} Locations on Map</strong>
                         <i className="pi pi-map-marker" style={{ marginRight: '10px', color: '#06b6d4', fontSize: '16px' }}></i>
                         <strong style={{ fontSize: '14px' }}>{locations.filter(loc => loc.latitude && loc.longitude).length} Locations on Map</strong>
                     </div>

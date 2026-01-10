@@ -8577,15 +8577,20 @@ export default function FlexibleScrollDemo() {
                 {/* View Saved Presets Dialog */}
                 <Dialog
                     header={
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <i className="pi pi-bookmark" style={{ color: '#8b5cf6', fontSize: '1.25rem' }}></i>
-                            <span>Saved Sort Presets</span>
+                        <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '12.5px', fontWeight: '600', marginBottom: '4px' }}>
+                                Saved Sort Presets
+                            </div>
+                            <div style={{ fontSize: '11.5px', color: isDark ? '#9ca3af' : '#6b7280' }}>
+                                {currentRouteName}
+                            </div>
                         </div>
                     }
                     visible={presetsListVisible}
                     style={{ width: deviceInfo.isMobile ? '95vw' : '600px' }}
                     modal
                     dismissableMask
+                    closable={false}
                     transitionOptions={{ timeout: 300 }}
                     onHide={() => setPresetsListVisible(false)}
                 >
@@ -8705,7 +8710,8 @@ export default function FlexibleScrollDemo() {
                                                 direction="left"
                                                 showIcon="pi pi-bars"
                                                 hideIcon="pi pi-times"
-                                                buttonClassName="p-button-sm"
+                                                className="preset-speeddial"
+                                                buttonClassName="preset-speeddial-btn"
                                                 style={{ position: 'relative' }}
                                             />
                                         </div>
@@ -8724,7 +8730,7 @@ export default function FlexibleScrollDemo() {
                             label="Close"
                             icon="pi pi-times"
                             onClick={() => setPresetsListVisible(false)}
-                            severity="secondary"
+                            severity="danger"
                             size="small"
                             outlined
                         />
