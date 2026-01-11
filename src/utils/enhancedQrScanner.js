@@ -172,14 +172,53 @@ function loadImage(source) {
 /**
  * Try scanning with jsQR library
  * @param {ImageData} imageData - Image data to scan
- * @returns {string|null} Decoded QR code data or null
+ * @param {boolean} findMultiple - Whether to find multiple QR codes
+ * @returns {string|string[]|null} Decoded QR code data or null
  */
-function tryJsQR(imageData) {
+function tryJsQR(imageData, findMultiple = false) {
     try {
-        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+        if (!findMultiple) {
+            const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                inversionAttempts: 'dontInvert',
+            });
+            return code ? code.data : null;
+        }
+        
+        // For multiple QR codes, scan in grid pattern
+        const codes = [];
+        const gridSize = 4; // Divide image into 4x4 grid
+        const width = imageData.width;
+        const height = imageData.height;
+        const stepX = Math.floor(width / gridSize);
+        const stepY = Math.floor(height / gridSize);
+        
+        // Try different regions
+        for (let y = 0; y < gridSize; y++) {
+            for (let x = 0; x < gridSize; x++) {
+                const startX = x * stepX;
+                const startY = y * stepY;
+                const regionWidth = Math.min(stepX * 2, width - startX);
+                const regionHeight = Math.min(stepY * 2, height - startY);
+                
+                const code = jsQR(imageData.data, width, height, {
+                    inversionAttempts: 'dontInvert',
+                });
+                
+                if (code && !codes.includes(code.data)) {
+                    codes.push(code.data);
+                }
+            }
+        }
+        
+        // Also try full image
+        const fullCode = jsQR(imageData.data, width, height, {
             inversionAttempts: 'dontInvert',
         });
-        return code ? code.data : null;
+        if (fullCode && !codes.includes(fullCode.data)) {
+            codes.push(fullCode.data);
+        }
+        
+        return codes.length > 0 ? codes : null;
     } catch (error) {
         console.warn('jsQR scanning failed:', error);
         return null;
@@ -190,13 +229,15 @@ function tryJsQR(imageData) {
  * Enhanced QR code scanner with preprocessing and multiple libraries
  * @param {string|Blob} imageSource - Image URL or Blob
  * @param {Function} onProgress - Progress callback (optional)
- * @returns {Promise<string>} Decoded QR code data
+ * @param {boolean} findMultiple - Whether to find multiple QR codes
+ * @returns {Promise<string|string[]>} Decoded QR code data (single or array)
  */
-export async function enhancedQrScan(imageSource, onProgress = null) {
-    console.log('🔍 Starting enhanced QR code scan...');
+export async function enhancedQrScan(imageSource, onProgress = null, findMultiple = false) {
+    console.log('🔍 Starting enhanced QR code scan...', findMultiple ? '(multiple mode)' : '(single mode)');
     
     let img;
     let blob = imageSource;
+    const allResults = new Set(); // Use Set to avoid duplicates
     
     try {
         // Step 1: Handle CORS for remote images
@@ -224,7 +265,11 @@ export async function enhancedQrScan(imageSource, onProgress = null) {
                 alsoTryWithoutScanRegion: true,
             });
             console.log('✅ QR code detected with qr-scanner (original):', result.data);
-            return result.data;
+            
+            if (!findMultiple) {
+                return result.data;
+            }
+            allResults.add(result.data);
         } catch (error) {
             console.log('⚠️ qr-scanner failed, trying with preprocessing...');
         }
@@ -243,10 +288,18 @@ export async function enhancedQrScan(imageSource, onProgress = null) {
             const variation = imageVariations[i];
             
             // Try jsQR
-            const jsQrResult = tryJsQR(variation);
+            const jsQrResult = tryJsQR(variation, findMultiple);
             if (jsQrResult) {
-                console.log(`✅ QR code detected with jsQR (variation ${i + 1}):`, jsQrResult);
-                return jsQrResult;
+                if (Array.isArray(jsQrResult)) {
+                    jsQrResult.forEach(code => allResults.add(code));
+                    console.log(`✅ QR codes detected with jsQR (variation ${i + 1}):`, jsQrResult);
+                } else {
+                    console.log(`✅ QR code detected with jsQR (variation ${i + 1}):`, jsQrResult);
+                    if (!findMultiple) {
+                        return jsQrResult;
+                    }
+                    allResults.add(jsQrResult);
+                }
             }
             
             // Try qr-scanner with preprocessed image
@@ -263,10 +316,26 @@ export async function enhancedQrScan(imageSource, onProgress = null) {
                     alsoTryWithoutScanRegion: true,
                 });
                 console.log(`✅ QR code detected with qr-scanner (variation ${i + 1}):`, result.data);
-                return result.data;
+                
+                if (!findMultiple) {
+                    return result.data;
+                }
+                allResults.add(result.data);
             } catch (error) {
                 // Continue to next variation
             }
+            
+            // If we found results and not looking for multiple, return first one
+            if (!findMultiple && allResults.size > 0) {
+                return Array.from(allResults)[0];
+            }
+        }
+        
+        // Return results
+        if (allResults.size > 0) {
+            const resultsArray = Array.from(allResults);
+            console.log(`✅ Found ${resultsArray.length} unique QR code(s)`);
+            return findMultiple ? resultsArray : resultsArray[0];
         }
         
         throw new Error('Could not detect QR code in image after trying all enhancement methods');
@@ -286,13 +355,14 @@ export async function enhancedQrScan(imageSource, onProgress = null) {
  * Scan QR code with visual progress updates
  * @param {string|Blob} imageSource - Image source
  * @param {Object} callbacks - Callbacks for progress and result
- * @returns {Promise<string>} Decoded QR code data
+ * @param {boolean} findMultiple - Whether to find multiple QR codes
+ * @returns {Promise<string|string[]>} Decoded QR code data
  */
-export async function scanQrCodeWithProgress(imageSource, callbacks = {}) {
+export async function scanQrCodeWithProgress(imageSource, callbacks = {}, findMultiple = false) {
     const { onProgress, onSuccess, onError } = callbacks;
     
     try {
-        const result = await enhancedQrScan(imageSource, onProgress);
+        const result = await enhancedQrScan(imageSource, onProgress, findMultiple);
         if (onSuccess) onSuccess(result);
         return result;
     } catch (error) {

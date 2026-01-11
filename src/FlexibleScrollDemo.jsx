@@ -639,13 +639,13 @@ export default function FlexibleScrollDemo() {
     
     // QR Code Modal State
     const [qrCodeDialogVisible, setQrCodeDialogVisible] = useState(false);
-    const [qrCodeImageUrl, setQrCodeImageUrl] = useState('');
-    const [qrCodeDestinationUrl, setQrCodeDestinationUrl] = useState('');
+    const [qrCodeImages, setQrCodeImages] = useState([]); // Array of {imageUrl, destinationUrl, id}
     const [uploadingQrCode, setUploadingQrCode] = useState(false);
     const [scanningQrCode, setScanningQrCode] = useState(false);
     const [scanProgress, setScanProgress] = useState({ step: 0, total: 4, message: '' });
     const [scannedUrl, setScannedUrl] = useState(''); // Store scanned URL to display
     const [qrResultDialogVisible, setQrResultDialogVisible] = useState(false); // Simple result dialog
+    const [qrImageSelectionDialogVisible, setQrImageSelectionDialogVisible] = useState(false); // Multiple QR images selection
     
     // Marker Color Picker State
     const [colorPickerVisible, setColorPickerVisible] = useState(false);
@@ -977,16 +977,22 @@ export default function FlexibleScrollDemo() {
         }
     }, [dialogData]);
     
-    // Auto-scan QR code when dialog opens in view mode (like Table-grod)
+    // Auto-show QR selection when dialog opens in view mode
     useEffect(() => {
-        if (qrCodeDialogVisible && !editMode && qrCodeImageUrl) {
-            // Auto-trigger scan after a short delay to allow dialog animation
-            const timer = setTimeout(() => {
-                handleScanQrCode(qrCodeImageUrl, qrCodeDestinationUrl);
-            }, 300);
-            return () => clearTimeout(timer);
+        if (qrCodeDialogVisible && !editMode && qrCodeImages.length > 0) {
+            // If multiple QR codes, show selection dialog
+            if (qrCodeImages.length > 1) {
+                setTimeout(() => {
+                    setQrImageSelectionDialogVisible(true);
+                }, 300);
+            } else if (qrCodeImages.length === 1) {
+                // Single QR code - auto scan
+                setTimeout(() => {
+                    handleScanQrCode(qrCodeImages[0].imageUrl, qrCodeImages[0].destinationUrl);
+                }, 300);
+            }
         }
-    }, [qrCodeDialogVisible, editMode, qrCodeImageUrl, qrCodeDestinationUrl, handleScanQrCode]);
+    }, [qrCodeDialogVisible, editMode, qrCodeImages, handleScanQrCode]);
     
     // Apply dark mode to body class and PrimeReact theme
     useEffect(() => {
@@ -1157,8 +1163,7 @@ export default function FlexibleScrollDemo() {
                     if (!isRouteInfo) {
                         event.preventDefault();
                         setCurrentEditingRowId(selectedRowInfo.id);
-                        setQrCodeImageUrl(selectedRowInfo.qrCodeImageUrl || '');
-                        setQrCodeDestinationUrl(selectedRowInfo.qrCodeDestinationUrl || '');
+                        setQrCodeImages(selectedRowInfo.qrCodeImages || []);
                         setQrCodeDialogVisible(true);
                     }
                     break;
@@ -1598,11 +1603,12 @@ export default function FlexibleScrollDemo() {
         }
         
         // 🔍 Debug: Log data untuk ensure QR code fields tersedia
-        if (!isRoute && latestRowData.qrCodeImageUrl) {
+        if (!isRoute && latestRowData.qrCodeImages && latestRowData.qrCodeImages.length > 0) {
             console.log('✅ QR Code detected in location:', {
                 id: latestRowData.id,
                 location: latestRowData.location,
-                hasQrCode: true
+                hasQrCode: true,
+                qrCount: latestRowData.qrCodeImages.length
             });
         }
         
@@ -1854,13 +1860,19 @@ export default function FlexibleScrollDemo() {
         try {
             // Processing QR code image
             
-            // Convert file to base64 for preview and storage (like repo rujukan)
+            // Convert file to base64 for preview and storage
             const reader = new FileReader();
             reader.onloadend = () => {
                 const base64String = reader.result;
-                setQrCodeImageUrl(base64String);
+                // Add new QR code to array
+                setQrCodeImages(prev => [...prev, {
+                    imageUrl: base64String,
+                    destinationUrl: '',
+                    id: Date.now() // unique id for each QR
+                }]);
                 setUploadingQrCode(false);
-                // QR code image loaded successfully
+                event.target.value = ''; // Reset input for next upload
+                showSuccessToast('📱 QR code image added!');
             };
             reader.onerror = () => {
                 alert('Failed to read file');
@@ -1882,20 +1894,18 @@ export default function FlexibleScrollDemo() {
         if (!currentEditingRowId) return;
         
         try {
-            console.log('💾 Saving QR code:', {
+            console.log('💾 Saving QR codes:', {
                 id: currentEditingRowId,
-                qrCodeImageUrl: qrCodeImageUrl || null,
-                qrCodeDestinationUrl: qrCodeDestinationUrl || null,
-                action: (!qrCodeImageUrl && !qrCodeDestinationUrl) ? 'DELETE' : 'UPDATE'
+                qrCodeImages: qrCodeImages,
+                action: qrCodeImages.length === 0 ? 'DELETE' : 'UPDATE'
             });
             
-            // Update the location in dialogData (set to null if empty to delete)
+            // Update the location in dialogData
             const updatedDialogData = dialogData.map(item => {
                 if (item.id === currentEditingRowId) {
                     return {
                         ...item,
-                        qrCodeImageUrl: qrCodeImageUrl || null,
-                        qrCodeDestinationUrl: qrCodeDestinationUrl || null
+                        qrCodeImages: qrCodeImages.length > 0 ? qrCodeImages : null
                     };
                 }
                 return item;
@@ -1903,15 +1913,14 @@ export default function FlexibleScrollDemo() {
             
             setDialogData(updatedDialogData);
             
-            // Update the location in routes (set to null if empty to delete)
+            // Update the location in routes
             const updatedRoutes = routes.map(route => ({
                 ...route,
                 locations: route.locations?.map(loc => {
                     if (loc.id === currentEditingRowId) {
                         return {
                             ...loc,
-                            qrCodeImageUrl: qrCodeImageUrl || null,
-                            qrCodeDestinationUrl: qrCodeDestinationUrl || null
+                            qrCodeImages: qrCodeImages.length > 0 ? qrCodeImages : null
                         };
                     }
                     return loc;
@@ -1920,24 +1929,22 @@ export default function FlexibleScrollDemo() {
             
             setRoutes(updatedRoutes);
             
-            // Update selectedRowInfo if it's the same location (set to null if empty)
+            // Update selectedRowInfo if it's the same location
             if (selectedRowInfo && selectedRowInfo.id === currentEditingRowId) {
                 setSelectedRowInfo({
                     ...selectedRowInfo,
-                    qrCodeImageUrl: qrCodeImageUrl || null,
-                    qrCodeDestinationUrl: qrCodeDestinationUrl || null
+                    qrCodeImages: qrCodeImages.length > 0 ? qrCodeImages : null
                 });
             }
             
             setRouteHasUnsavedChanges(currentRouteId, true);
             setQrCodeDialogVisible(false);
-            setQrCodeImageUrl('');
-            setQrCodeDestinationUrl('');
+            setQrCodeImages([]);
             setCurrentEditingRowId(null);
             
-            const actionMessage = (!qrCodeImageUrl && !qrCodeDestinationUrl) 
-                ? '📱 QR code removed!'
-                : '📱 QR code updated!';
+            const actionMessage = qrCodeImages.length === 0
+                ? '📱 QR codes removed!'
+                : `📱 ${qrCodeImages.length} QR code(s) saved!`;
             showSuccessToast(actionMessage);
             
             // Show reminder toast after a short delay
@@ -4965,8 +4972,7 @@ export default function FlexibleScrollDemo() {
                                                 description: rowData.description || '',
                                                 images: rowData.images || [],
                                                 websiteLink: rowData.websiteLink || '',
-                                                qrCodeImageUrl: rowData.qrCodeImageUrl || '',
-                                                qrCodeDestinationUrl: rowData.qrCodeDestinationUrl || ''
+                                                qrCodeImages: rowData.qrCodeImages || []
                                             };
                                             handleShowInfo(transformedData, false);
                                         }}
@@ -5683,10 +5689,10 @@ export default function FlexibleScrollDemo() {
                                         
                                         {/* QR Code Button - [Q] */}
                         {/* Only show in view mode if QR code exists, or always show in edit mode */}
-                        {(editMode || selectedRowInfo?.qrCodeImageUrl) && (
+                        {(editMode || (selectedRowInfo?.qrCodeImages && selectedRowInfo.qrCodeImages.length > 0)) && (
                             editMode ? (
                                 <button
-                                    title={selectedRowInfo?.qrCodeImageUrl ? "Edit QR Code [Q]" : "Add QR Code [Q]"}
+                                    title={(selectedRowInfo?.qrCodeImages && selectedRowInfo.qrCodeImages.length > 0) ? `Edit QR Codes (${selectedRowInfo.qrCodeImages.length}) [Q]` : "Add QR Code [Q]"}
                                     style={{
                                         width: '50px',
                                         height: '50px',
@@ -5701,7 +5707,7 @@ export default function FlexibleScrollDemo() {
                                         transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                                         boxSizing: 'border-box',
                                         fontSize: '24px',
-                                        color: selectedRowInfo?.qrCodeImageUrl ? '#f59e0b' : '#8b5cf6'
+                                        color: (selectedRowInfo?.qrCodeImages && selectedRowInfo.qrCodeImages.length > 0) ? '#f59e0b' : '#8b5cf6'
                                     }}
                                     onMouseEnter={(e) => {
                                         e.currentTarget.style.transform = 'scale(1.1)';
@@ -5714,12 +5720,11 @@ export default function FlexibleScrollDemo() {
                                     onClick={() => {
                                         // Edit mode: Open dialog to edit QR code
                                         setCurrentEditingRowId(selectedRowInfo.id);
-                                        setQrCodeImageUrl(selectedRowInfo.qrCodeImageUrl || '');
-                                        setQrCodeDestinationUrl(selectedRowInfo.qrCodeDestinationUrl || '');
+                                        setQrCodeImages(selectedRowInfo.qrCodeImages || []);
                                         setQrCodeDialogVisible(true);
                                     }}
                                 >
-                                    <i className={`pi ${selectedRowInfo?.qrCodeImageUrl ? 'pi-pencil' : 'pi-plus-circle'}`}></i>
+                                    <i className={`pi ${(selectedRowInfo?.qrCodeImages && selectedRowInfo.qrCodeImages.length > 0) ? 'pi-pencil' : 'pi-plus-circle'}`}></i>
                                 </button>
                             ) : (
                                 <button
@@ -5752,9 +5757,10 @@ export default function FlexibleScrollDemo() {
                                         }
                                     }}
                                     onClick={() => {
-                                        // View mode: Auto-scan QR code without confirmation
-                                        if (selectedRowInfo.qrCodeImageUrl && !scanningQrCode) {
-                                            handleScanQrCode(selectedRowInfo.qrCodeImageUrl, selectedRowInfo.qrCodeDestinationUrl);
+                                        // View mode: Open QR dialog (will auto-show selection or scan)
+                                        if (selectedRowInfo.qrCodeImages && selectedRowInfo.qrCodeImages.length > 0 && !scanningQrCode) {
+                                            setQrCodeImages(selectedRowInfo.qrCodeImages);
+                                            setQrCodeDialogVisible(true);
                                         }
                                     }}
                                     disabled={scanningQrCode}
@@ -7897,18 +7903,17 @@ export default function FlexibleScrollDemo() {
                             padding: '8px 0'
                         }}>
                             <i className="pi pi-qrcode" style={{ marginRight: '8px' }}></i>
-                            {editMode ? 'Manage QR Code' : 'Scan QR Code'}
+                            {editMode ? 'Manage QR Codes' : 'View QR Codes'}
                         </div>
                     }
                     visible={qrCodeDialogVisible} 
-                    style={{ width: deviceInfo.isMobile ? '95vw' : '500px' }} 
+                    style={{ width: deviceInfo.isMobile ? '95vw' : '550px' }} 
                     modal
                     dismissableMask
                     closeOnEscape
                     onHide={() => {
                         setQrCodeDialogVisible(false);
-                        setQrCodeImageUrl('');
-                        setQrCodeDestinationUrl('');
+                        setQrCodeImages([]);
                         setCurrentEditingRowId(null);
                         setScannedUrl(''); // Reset scanned URL
                         setScanningQrCode(false); // Reset scanning state
@@ -7920,16 +7925,15 @@ export default function FlexibleScrollDemo() {
                         editMode ? (
                             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
                                 <div>
-                                    {/* Show Delete button only if QR code exists */}
-                                    {(qrCodeImageUrl || qrCodeDestinationUrl) && (
+                                    {/* Show Delete All button only if QR codes exist */}
+                                    {qrCodeImages.length > 0 && (
                                         <Button 
-                                            label="Delete" 
+                                            label="Delete All" 
                                             icon="pi pi-trash" 
                                             onClick={() => {
-                                                const confirmed = window.confirm('🗑️ Delete QR Code?\n\nThis will remove the QR code and destination URL from this location.');
+                                                const confirmed = window.confirm(`🗑️ Delete All QR Codes?\n\nThis will remove all ${qrCodeImages.length} QR code(s) from this location.`);
                                                 if (confirmed) {
-                                                    setQrCodeImageUrl('');
-                                                    setQrCodeDestinationUrl('');
+                                                    setQrCodeImages([]);
                                                     handleSaveQrCode();
                                                 }
                                             }}
@@ -7944,12 +7948,10 @@ export default function FlexibleScrollDemo() {
                                         icon="pi pi-times" 
                                         onClick={() => {
                                             setQrCodeDialogVisible(false);
-                                            setQrCodeImageUrl('');
-                                            setQrCodeDestinationUrl('');
+                                            setQrCodeImages([]);
                                             setCurrentEditingRowId(null);
-                                            setScannedUrl(''); // Reset scanned URL
-                                            setScanningQrCode(false); // Reset scanning state
-                                            // Reset file input
+                                            setScannedUrl('');
+                                            setScanningQrCode(false);
                                             const fileInput = document.getElementById('qr-code-upload-input');
                                             if (fileInput) fileInput.value = '';
                                         }}
@@ -7960,7 +7962,6 @@ export default function FlexibleScrollDemo() {
                                         icon="pi pi-check" 
                                         onClick={handleSaveQrCode}
                                         className="p-button-success"
-                                        // Allow saving even if empty (to delete QR code)
                                     />
                                 </div>
                             </div>
@@ -7981,7 +7982,7 @@ export default function FlexibleScrollDemo() {
                     <div style={{ padding: '1rem 0' }}>
                         {editMode ? (
                             <>
-                                {/* Upload QR Code Image */}
+                                {/* Upload QR Code Images */}
                                 <div style={{ marginBottom: '1.5rem' }}>
                                     <label style={{ 
                                         display: 'block', 
@@ -7990,7 +7991,7 @@ export default function FlexibleScrollDemo() {
                                         fontWeight: 'bold',
                                         color: isDark ? '#e5e5e5' : '#495057'
                                     }}>
-                                        Upload QR Code Image
+                                        Upload QR Code Images (Multiple)
                                     </label>
                                     <div style={{ position: 'relative' }}>
                                         <input
@@ -8026,129 +8027,106 @@ export default function FlexibleScrollDemo() {
                                             </div>
                                         )}
                                     </div>
-                                    {qrCodeImageUrl && (
-                                        <div style={{ marginTop: '1rem', textAlign: 'center' }}>
-                                            <div style={{ position: 'relative', display: 'inline-block' }}>
-                                                <img 
-                                                    src={qrCodeImageUrl} 
-                                                    alt="QR Code" 
-                                                    style={{ 
-                                                        maxWidth: '200px',
-                                                        maxHeight: '200px',
-                                                        border: '2px solid #e5e7eb',
-                                                        borderRadius: '8px'
-                                                    }} 
-                                                />
-                                                <button
-                                                    onClick={() => {
-                                                        setQrCodeImageUrl('');
-                                                        const fileInput = document.getElementById('qr-code-upload-input');
-                                                        if (fileInput) fileInput.value = '';
-                                                    }}
-                                                    style={{
-                                                        position: 'absolute',
-                                                        top: '-10px',
-                                                        right: '-10px',
-                                                        width: '30px',
-                                                        height: '30px',
-                                                        borderRadius: '50%',
-                                                        border: 'none',
-                                                        backgroundColor: '#ef4444',
-                                                        color: 'white',
-                                                        cursor: 'pointer',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        fontSize: '16px',
-                                                        fontWeight: 'bold',
-                                                        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-                                                        transition: 'all 0.2s ease'
-                                                    }}
-                                                    onMouseEnter={(e) => {
-                                                        e.currentTarget.style.backgroundColor = '#dc2626';
-                                                        e.currentTarget.style.transform = 'scale(1.1)';
-                                                    }}
-                                                    onMouseLeave={(e) => {
-                                                        e.currentTarget.style.backgroundColor = '#ef4444';
-                                                        e.currentTarget.style.transform = 'scale(1)';
-                                                    }}
-                                                    title="Delete QR Code Image"
-                                                >
-                                                    ×
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                                
-                                {/* Or Enter Destination URL */}
-                                <div>
-                                    <label style={{ 
-                                        display: 'block', 
-                                        marginBottom: '10px',
-                                        fontSize: '13px',
-                                        fontWeight: 'bold',
-                                        color: isDark ? '#e5e5e5' : '#495057'
-                                    }}>
-                                        Or Enter Destination URL
-                                    </label>
-                                    <InputText 
-                                        value={qrCodeDestinationUrl}
-                                        onChange={(e) => setQrCodeDestinationUrl(e.target.value)}
-                                        placeholder="https://example.com"
-                                        style={{ width: '100%' }}
-                                    />
                                     <small style={{ 
                                         display: 'block', 
                                         marginTop: '8px',
                                         color: isDark ? '#9ca3af' : '#6b7280',
                                         fontSize: '12px'
                                     }}>
-                                        This URL will be opened when the QR code is scanned in view mode
+                                        You can upload multiple QR code images - just select and upload again
                                     </small>
+                                    
+                                    {/* Show uploaded QR codes */}
+                                    {qrCodeImages.length > 0 && (
+                                        <div style={{ marginTop: '1rem' }}>
+                                            <div style={{
+                                                fontSize: '12px',
+                                                fontWeight: '600',
+                                                marginBottom: '0.75rem',
+                                                color: isDark ? '#e5e5e5' : '#495057'
+                                            }}>
+                                                {qrCodeImages.length} QR Code(s) Uploaded:
+                                            </div>
+                                            <div style={{
+                                                display: 'grid',
+                                                gridTemplateColumns: deviceInfo.isMobile ? '1fr' : 'repeat(2, 1fr)',
+                                                gap: '1rem'
+                                            }}>
+                                                {qrCodeImages.map((qrItem, index) => (
+                                                    <div key={qrItem.id} style={{ position: 'relative' }}>
+                                                        <img 
+                                                            src={qrItem.imageUrl} 
+                                                            alt={`QR Code ${index + 1}`}
+                                                            style={{ 
+                                                                width: '100%',
+                                                                maxWidth: '150px',
+                                                                height: 'auto',
+                                                                border: '2px solid #e5e7eb',
+                                                                borderRadius: '8px',
+                                                                display: 'block'
+                                                            }} 
+                                                        />
+                                                        <div style={{
+                                                            position: 'absolute',
+                                                            top: '5px',
+                                                            left: '5px',
+                                                            backgroundColor: '#3b82f6',
+                                                            color: 'white',
+                                                            padding: '2px 8px',
+                                                            borderRadius: '12px',
+                                                            fontSize: '11px',
+                                                            fontWeight: '700'
+                                                        }}>
+                                                            #{index + 1}
+                                                        </div>
+                                                        <button
+                                                            onClick={() => {
+                                                                setQrCodeImages(prev => prev.filter((_, i) => i !== index));
+                                                            }}
+                                                            style={{
+                                                                position: 'absolute',
+                                                                top: '-8px',
+                                                                right: '-8px',
+                                                                width: '28px',
+                                                                height: '28px',
+                                                                borderRadius: '50%',
+                                                                border: 'none',
+                                                                backgroundColor: '#ef4444',
+                                                                color: 'white',
+                                                                cursor: 'pointer',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                fontSize: '14px',
+                                                                fontWeight: 'bold',
+                                                                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                                                                transition: 'all 0.2s ease'
+                                                            }}
+                                                            onMouseEnter={(e) => {
+                                                                e.currentTarget.style.backgroundColor = '#dc2626';
+                                                                e.currentTarget.style.transform = 'scale(1.1)';
+                                                            }}
+                                                            onMouseLeave={(e) => {
+                                                                e.currentTarget.style.backgroundColor = '#ef4444';
+                                                                e.currentTarget.style.transform = 'scale(1)';
+                                                            }}
+                                                            title="Delete QR Code Image"
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </>
                         ) : (
-                            // View Mode - Show QR code scanning animation
-                            <div style={{ textAlign: 'center' }}>
+                            // View Mode - Show message or scanning
+                            <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
                                 {scanningQrCode ? (
                                     // Scanning Animation
                                     <div>
-                                        <div style={{ 
-                                            position: 'relative',
-                                            display: 'inline-block',
-                                            marginBottom: '1.5rem'
-                                        }}>
-                                            <div className="qr-scan-container" style={{
-                                                position: 'relative',
-                                                width: '300px',
-                                                height: '300px',
-                                                margin: '0 auto',
-                                                borderRadius: '12px',
-                                                overflow: 'hidden'
-                                            }}>
-                                                {qrCodeImageUrl && (
-                                                    <img 
-                                                        src={qrCodeImageUrl} 
-                                                        alt="QR Code" 
-                                                        style={{ 
-                                                            width: '100%',
-                                                            height: '100%',
-                                                            objectFit: 'contain',
-                                                            border: '2px solid #e5e7eb',
-                                                            borderRadius: '12px'
-                                                        }} 
-                                                    />
-                                                )}
-                                                <div className="qr-scan-line"></div>
-                                                <div className="qr-scan-corners">
-                                                    <div className="qr-scan-corner top-left"></div>
-                                                    <div className="qr-scan-corner top-right"></div>
-                                                    <div className="qr-scan-corner bottom-left"></div>
-                                                    <div className="qr-scan-corner bottom-right"></div>
-                                                </div>
-                                            </div>
-                                        </div>
                                         <div style={{
                                             display: 'flex',
                                             alignItems: 'center',
@@ -8157,7 +8135,7 @@ export default function FlexibleScrollDemo() {
                                             color: '#10b981',
                                             fontSize: '1.1rem',
                                             fontWeight: '600',
-                                            marginTop: '1rem'
+                                            marginBottom: '1rem'
                                         }}>
                                             <i className="pi pi-spin pi-spinner" style={{ fontSize: '1.5rem' }}></i>
                                             <span>Scanning QR Code...</span>
@@ -8195,104 +8173,37 @@ export default function FlexibleScrollDemo() {
                                                         borderRadius: '4px'
                                                     }}></div>
                                                 </div>
-                                                <div style={{
-                                                    marginTop: '0.5rem',
-                                                    fontSize: '0.75rem',
-                                                    color: isDark ? '#64748b' : '#9ca3af',
-                                                    textAlign: 'right'
-                                                }}>
-                                                    Step {scanProgress.step} of {scanProgress.total}
-                                                </div>
                                             </div>
                                         )}
-                                        
-                                        {/* Display scanned URL */}
-                                        {scannedUrl && (
-                                            <div style={{
-                                                marginTop: '1.5rem',
-                                                padding: '1rem',
-                                                backgroundColor: isDark ? '#1e293b' : '#f0fdf4',
-                                                border: `2px solid ${isDark ? '#10b981' : '#86efac'}`,
-                                                borderRadius: '8px',
-                                                textAlign: 'left'
-                                            }}>
-                                                <div style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '0.5rem',
-                                                    marginBottom: '0.5rem',
-                                                    color: '#10b981',
-                                                    fontWeight: '700',
-                                                    fontSize: '0.875rem'
-                                                }}>
-                                                    <i className="pi pi-check-circle"></i>
-                                                    <span>QR Code Detected!</span>
-                                                </div>
-                                                <div style={{
-                                                    fontSize: '0.875rem',
-                                                    color: isDark ? '#e5e7eb' : '#374151',
-                                                    fontWeight: '600',
-                                                    wordBreak: 'break-all',
-                                                    backgroundColor: isDark ? '#0f172a' : '#ffffff',
-                                                    padding: '0.5rem',
-                                                    borderRadius: '4px',
-                                                    border: `1px solid ${isDark ? '#334155' : '#e5e7eb'}`
-                                                }}>
-                                                    {scannedUrl}
-                                                </div>
-                                            </div>
-                                        )}
-                                        
-                                        <p style={{
-                                            marginTop: '1rem',
-                                            fontSize: '0.875rem',
-                                            color: isDark ? '#9ca3af' : '#6b7280'
+                                    </div>
+                                ) : qrCodeImages.length > 1 ? (
+                                    <div>
+                                        <i className="pi pi-qrcode" style={{ fontSize: '3rem', color: '#3b82f6', marginBottom: '1rem', display: 'block' }}></i>
+                                        <p style={{ 
+                                            fontSize: '16px', 
+                                            fontWeight: '600',
+                                            color: isDark ? '#e5e5e5' : '#374151',
+                                            marginBottom: '0.5rem'
                                         }}>
-                                            {scannedUrl ? 'Opening link...' : 'Detecting QR code...'}
+                                            {qrCodeImages.length} QR Codes Available
                                         </p>
-                                    </div>
-                                ) : qrCodeImageUrl ? (
-                                    <div>
-                                        <div className="qr-scan-container" style={{
-                                            position: 'relative',
-                                            display: 'inline-block',
-                                            marginBottom: '1rem'
-                                        }}>
-                                            <img 
-                                                src={qrCodeImageUrl} 
-                                                alt="QR Code" 
-                                                style={{ 
-                                                    maxWidth: '100%',
-                                                    maxHeight: '400px',
-                                                    border: '2px solid #e5e7eb',
-                                                    borderRadius: '8px'
-                                                }} 
-                                            />
-                                        </div>
-                                        {qrCodeDestinationUrl && (
-                                            <Button 
-                                                label="Scan Again" 
-                                                icon="pi pi-qrcode" 
-                                                onClick={() => handleScanQrCode(qrCodeDestinationUrl)}
-                                                className="p-button-success"
-                                            />
-                                        )}
-                                    </div>
-                                ) : qrCodeDestinationUrl ? (
-                                    <div>
                                         <p style={{ 
                                             fontSize: '14px', 
-                                            color: isDark ? '#9ca3af' : '#6b7280',
-                                            marginBottom: '1rem'
+                                            color: isDark ? '#9ca3af' : '#6b7280'
                                         }}>
-                                            No QR code image uploaded
+                                            Selection dialog will appear
                                         </p>
-                                        <Button 
-                                            label="Go to Destination" 
-                                            icon="pi pi-external-link" 
-                                            onClick={() => handleOpenLink(qrCodeDestinationUrl, 'QR Code')}
-                                            className="p-button-success"
-                                        />
+                                    </div>
+                                ) : qrCodeImages.length === 1 ? (
+                                    <div>
+                                        <i className="pi pi-qrcode" style={{ fontSize: '3rem', color: '#10b981', marginBottom: '1rem', display: 'block' }}></i>
+                                        <p style={{ 
+                                            fontSize: '16px', 
+                                            fontWeight: '600',
+                                            color: isDark ? '#e5e5e5' : '#374151'
+                                        }}>
+                                            Preparing to scan...
+                                        </p>
                                     </div>
                                 ) : (
                                     <p style={{ 
@@ -8464,6 +8375,139 @@ export default function FlexibleScrollDemo() {
                         }}>
                             <i className="pi pi-info-circle" style={{ marginRight: '0.5rem' }}></i>
                             Click "Open Link" to visit this URL in a new tab.
+                        </p>
+                    </div>
+                </Dialog>
+                
+                {/* QR Image Selection Dialog - When multiple QR images uploaded */}
+                <Dialog
+                    header={
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <i className="pi pi-qrcode" style={{ color: '#3b82f6', fontSize: '1.25rem' }}></i>
+                            <span>Select QR Code to Scan</span>
+                        </div>
+                    }
+                    visible={qrImageSelectionDialogVisible}
+                    style={{ width: deviceInfo.isMobile ? '95vw' : '550px' }}
+                    modal
+                    dismissableMask
+                    transitionOptions={{ timeout: 300 }}
+                    onHide={() => {
+                        setQrImageSelectionDialogVisible(false);
+                    }}
+                >
+                    <div style={{ 
+                        padding: '1rem',
+                        color: isDark ? '#e5e7eb' : '#1f2937'
+                    }}>
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            marginBottom: '1.5rem',
+                            color: '#3b82f6',
+                            fontSize: '14px',
+                            fontWeight: '600'
+                        }}>
+                            <i className="pi pi-info-circle"></i>
+                            <span>Found {qrCodeImages.length} QR Code(s) - Select one to scan:</span>
+                        </div>
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: deviceInfo.isMobile ? '1fr' : 'repeat(2, 1fr)',
+                            gap: '1rem',
+                            maxHeight: '500px',
+                            overflowY: 'auto'
+                        }}>
+                            {qrCodeImages.map((qrItem, index) => (
+                                <div
+                                    key={qrItem.id}
+                                    style={{
+                                        backgroundColor: isDark ? '#1e293b' : '#f8fafc',
+                                        padding: '1rem',
+                                        borderRadius: '12px',
+                                        border: `2px solid ${isDark ? '#334155' : '#e2e8f0'}`,
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        gap: '0.75rem'
+                                    }}
+                                    onClick={() => {
+                                        setQrImageSelectionDialogVisible(false);
+                                        handleScanQrCode(qrItem.imageUrl, qrItem.destinationUrl);
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.borderColor = '#3b82f6';
+                                        e.currentTarget.style.backgroundColor = isDark ? '#334155' : '#eff6ff';
+                                        e.currentTarget.style.transform = 'scale(1.02)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.borderColor = isDark ? '#334155' : '#e2e8f0';
+                                        e.currentTarget.style.backgroundColor = isDark ? '#1e293b' : '#f8fafc';
+                                        e.currentTarget.style.transform = 'scale(1)';
+                                    }}
+                                >
+                                    <div style={{
+                                        width: '36px',
+                                        height: '36px',
+                                        borderRadius: '50%',
+                                        backgroundColor: '#3b82f6',
+                                        color: 'white',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontWeight: '700',
+                                        fontSize: '16px'
+                                    }}>
+                                        {index + 1}
+                                    </div>
+                                    <img 
+                                        src={qrItem.imageUrl} 
+                                        alt={`QR Code ${index + 1}`}
+                                        style={{ 
+                                            width: '100%',
+                                            maxWidth: '200px',
+                                            height: 'auto',
+                                            border: `2px solid ${isDark ? '#475569' : '#cbd5e1'}`,
+                                            borderRadius: '8px',
+                                            objectFit: 'contain'
+                                        }} 
+                                    />
+                                    {qrItem.destinationUrl && (
+                                        <div style={{
+                                            fontSize: '11px',
+                                            wordBreak: 'break-all',
+                                            color: isDark ? '#94a3b8' : '#64748b',
+                                            textAlign: 'center',
+                                            maxWidth: '100%'
+                                        }}>
+                                            {qrItem.destinationUrl}
+                                        </div>
+                                    )}
+                                    <div style={{
+                                        fontSize: '12px',
+                                        color: '#3b82f6',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.25rem',
+                                        fontWeight: '600'
+                                    }}>
+                                        <i className="pi pi-search" style={{ fontSize: '11px' }}></i>
+                                        <span>Click to scan</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <p style={{ 
+                            fontSize: '13px',
+                            marginTop: '1.5rem',
+                            color: isDark ? '#9ca3af' : '#6b7280',
+                            textAlign: 'center'
+                        }}>
+                            <i className="pi pi-hand-pointer" style={{ marginRight: '0.5rem' }}></i>
+                            Click on any QR code image to scan it
                         </p>
                     </div>
                 </Dialog>
