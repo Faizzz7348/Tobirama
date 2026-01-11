@@ -16,7 +16,7 @@ import { EditableDescriptionList } from './components/EditableDescriptionList';
 import { useDeviceDetect, getResponsiveStyles } from './hooks/useDeviceDetect';
 import { usePWAInstall } from './hooks/usePWAInstall';
 import { uploadImageToImgBB } from './service/ImageUploadService';
-import QrScanner from 'qr-scanner';
+import { enhancedQrScan } from './utils/enhancedQrScanner';
 
 // CSS untuk remove border dari table header
 const tableStyles = `
@@ -643,6 +643,7 @@ export default function FlexibleScrollDemo() {
     const [qrCodeDestinationUrl, setQrCodeDestinationUrl] = useState('');
     const [uploadingQrCode, setUploadingQrCode] = useState(false);
     const [scanningQrCode, setScanningQrCode] = useState(false);
+    const [scanProgress, setScanProgress] = useState({ step: 0, total: 4, message: '' });
     const [scannedUrl, setScannedUrl] = useState(''); // Store scanned URL to display
     const [qrResultDialogVisible, setQrResultDialogVisible] = useState(false); // Simple result dialog
     
@@ -659,32 +660,16 @@ export default function FlexibleScrollDemo() {
     const handleScanQrCode = React.useCallback(async (qrImageUrl, destinationUrl) => {
         setScanningQrCode(true);
         setScannedUrl(''); // Reset
+        setScanProgress({ step: 0, total: 4, message: 'Starting scan...' });
         
         try {
-            let imageSource = qrImageUrl;
-            
-            // Scanning QR code from image
-            
-            // If it's a remote URL, handle CORS
-            if (imageSource.startsWith('http')) {
-                try {
-                    const response = await fetch(imageSource);
-                    if (response.ok) {
-                        imageSource = await response.blob();
-                    }
-                } catch (e) {
-                    console.warn('Could not fetch remote image, trying direct scan:', e);
-                }
-            }
-            
-            // Try to decode QR code from the image using QrScanner
-            const result = await QrScanner.scanImage(imageSource, { 
-                returnDetailedScanResult: true 
+            // Use enhanced QR scanner with progress callback
+            const result = await enhancedQrScan(qrImageUrl, (progress) => {
+                setScanProgress(progress);
             });
             
             // QR code scanned successfully
-            
-            let targetUrl = result.data;
+            let targetUrl = result;
             
             // If not a URL, search on Google
             if (!targetUrl.match(/^https?:\/\//)) {
@@ -698,11 +683,13 @@ export default function FlexibleScrollDemo() {
             // Store the scanned URL and show result dialog
             setScannedUrl(targetUrl);
             setScanningQrCode(false);
+            setScanProgress({ step: 4, total: 4, message: 'Scan complete!' });
             setQrResultDialogVisible(true);
                 
         } catch (error) {
             console.error('❌ QR scanning error:', error);
             setScanningQrCode(false);
+            setScanProgress({ step: 0, total: 4, message: '' });
             
             // Fallback: If have destination URL, use it
             if (destinationUrl) {
@@ -8175,6 +8162,49 @@ export default function FlexibleScrollDemo() {
                                             <i className="pi pi-spin pi-spinner" style={{ fontSize: '1.5rem' }}></i>
                                             <span>Scanning QR Code...</span>
                                         </div>
+                                        
+                                        {/* Progress Indicator */}
+                                        {scanProgress.step > 0 && (
+                                            <div style={{
+                                                marginTop: '1rem',
+                                                padding: '0.75rem 1rem',
+                                                backgroundColor: isDark ? '#1e293b' : '#f3f4f6',
+                                                border: `1px solid ${isDark ? '#334155' : '#e5e7eb'}`,
+                                                borderRadius: '8px'
+                                            }}>
+                                                <div style={{
+                                                    fontSize: '0.875rem',
+                                                    color: isDark ? '#94a3b8' : '#6b7280',
+                                                    marginBottom: '0.5rem',
+                                                    fontWeight: '500'
+                                                }}>
+                                                    {scanProgress.message}
+                                                </div>
+                                                <div style={{
+                                                    width: '100%',
+                                                    height: '8px',
+                                                    backgroundColor: isDark ? '#0f172a' : '#e5e7eb',
+                                                    borderRadius: '4px',
+                                                    overflow: 'hidden'
+                                                }}>
+                                                    <div style={{
+                                                        width: `${(scanProgress.step / scanProgress.total) * 100}%`,
+                                                        height: '100%',
+                                                        backgroundColor: '#10b981',
+                                                        transition: 'width 0.3s ease',
+                                                        borderRadius: '4px'
+                                                    }}></div>
+                                                </div>
+                                                <div style={{
+                                                    marginTop: '0.5rem',
+                                                    fontSize: '0.75rem',
+                                                    color: isDark ? '#64748b' : '#9ca3af',
+                                                    textAlign: 'right'
+                                                }}>
+                                                    Step {scanProgress.step} of {scanProgress.total}
+                                                </div>
+                                            </div>
+                                        )}
                                         
                                         {/* Display scanned URL */}
                                         {scannedUrl && (
