@@ -36,6 +36,9 @@ CREATE TABLE IF NOT EXISTS "Location" (
   "websiteLink" TEXT,
   "qrCodeImageUrl" TEXT,
   "qrCodeDestinationUrl" TEXT,
+  "isFrozen" BOOLEAN DEFAULT FALSE,
+  "freezeOrder" INTEGER DEFAULT NULL,
+  "allowEdit" BOOLEAN DEFAULT TRUE,
   "createdAt" TIMESTAMP DEFAULT NOW(),
   "updatedAt" TIMESTAMP DEFAULT NOW()
 );
@@ -113,6 +116,54 @@ CREATE INDEX IF NOT EXISTS idx_location_qrcode_images
 ON "Location" USING GIN ("qrCodeImages");
 
 -- =====================================================
+-- STEP 4: Migration 005 - Add Frozen Row Support
+-- =====================================================
+
+-- Add frozen row fields if not exist
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'Location' 
+    AND column_name = 'isFrozen'
+  ) THEN
+    ALTER TABLE "Location" ADD COLUMN "isFrozen" BOOLEAN DEFAULT FALSE;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'Location' 
+    AND column_name = 'freezeOrder'
+  ) THEN
+    ALTER TABLE "Location" ADD COLUMN "freezeOrder" INTEGER DEFAULT NULL;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'Location' 
+    AND column_name = 'allowEdit'
+  ) THEN
+    ALTER TABLE "Location" ADD COLUMN "allowEdit" BOOLEAN DEFAULT TRUE;
+  END IF;
+END $$;
+
+-- Set QL Kitchen as frozen row (if exists)
+UPDATE "Location"
+SET 
+  "isFrozen" = TRUE,
+  "freezeOrder" = 1,
+  "allowEdit" = TRUE
+WHERE (code = 'QLK' OR location = 'QL Kitchen')
+  AND "isFrozen" IS NOT TRUE;
+
+-- Create indexes for frozen rows
+CREATE INDEX IF NOT EXISTS idx_location_frozen 
+ON "Location"("isFrozen") WHERE "isFrozen" = TRUE;
+
+CREATE INDEX IF NOT EXISTS idx_location_freeze_order 
+ON "Location"("freezeOrder") WHERE "freezeOrder" IS NOT NULL;
+
+-- =====================================================
 -- VERIFICATION QUERIES
 -- =====================================================
 
@@ -144,10 +195,24 @@ FROM "Location"
 WHERE "qrCodeImages" IS NOT NULL 
 AND "qrCodeImages" != '[]'::jsonb;
 
+-- Check frozen rows
+SELECT 
+  'Frozen Rows' as status,
+  id,
+  code,
+  location,
+  "isFrozen",
+  "freezeOrder",
+  "allowEdit"
+FROM "Location" 
+WHERE "isFrozen" = TRUE
+ORDER BY "freezeOrder";
+
 -- =====================================================
 -- SETUP COMPLETE!
 -- =====================================================
 -- All tables created ✅
 -- All migrations applied ✅
 -- QR code multiple support enabled ✅
+-- Frozen row support with edit capability ✅
 -- =====================================================
