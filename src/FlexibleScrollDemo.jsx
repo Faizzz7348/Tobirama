@@ -16,7 +16,7 @@ import { EditableDescriptionList } from './components/EditableDescriptionList';
 import { useDeviceDetect, getResponsiveStyles } from './hooks/useDeviceDetect';
 import { usePWAInstall } from './hooks/usePWAInstall';
 import { uploadImageToImgBB } from './service/ImageUploadService';
-import { enhancedQrScan } from './utils/enhancedQrScanner';
+import QrScanner from 'qr-scanner';
 
 // CSS untuk remove border dari table header
 const tableStyles = `
@@ -762,7 +762,6 @@ export default function FlexibleScrollDemo() {
     const [qrCodeImages, setQrCodeImages] = useState([]); // Array of {imageUrl, destinationUrl, title, id}
     const [uploadingQrCode, setUploadingQrCode] = useState(false);
     const [scanningQrCode, setScanningQrCode] = useState(false);
-    const [scanProgress, setScanProgress] = useState({ step: 0, total: 4, message: '' });
     const [scannedUrl, setScannedUrl] = useState(''); // Store scanned URL to display
     const [qrResultDialogVisible, setQrResultDialogVisible] = useState(false); // Simple result dialog
     const [qrImageSelectionDialogVisible, setQrImageSelectionDialogVisible] = useState(false); // Multiple QR images selection
@@ -781,16 +780,16 @@ export default function FlexibleScrollDemo() {
     const handleScanQrCode = React.useCallback(async (qrImageUrl, destinationUrl) => {
         setScanningQrCode(true);
         setScannedUrl(''); // Reset
-        setScanProgress({ step: 0, total: 4, message: 'Starting scan...' });
         
         try {
-            // Use enhanced QR scanner with progress callback
-            const result = await enhancedQrScan(qrImageUrl, (progress) => {
-                setScanProgress(progress);
+            // Simple direct scan with qr-scanner library only
+            const result = await QrScanner.scanImage(qrImageUrl, {
+                returnDetailedScanResult: true,
+                alsoTryWithoutScanRegion: true,
             });
             
             // QR code scanned successfully
-            let targetUrl = result;
+            let targetUrl = result.data;
             
             // If not a URL, search on Google
             if (!targetUrl.match(/^https?:\/\//)) {
@@ -804,20 +803,18 @@ export default function FlexibleScrollDemo() {
             // Store the scanned URL and show result dialog
             setScannedUrl(targetUrl);
             setScanningQrCode(false);
-            setScanProgress({ step: 4, total: 4, message: 'Scan complete!' });
             setQrResultDialogVisible(true);
                 
         } catch (error) {
-            console.error('❌ QR scanning error:', error);
+            console.error('QR scanning error:', error);
             setScanningQrCode(false);
-            setScanProgress({ step: 0, total: 4, message: '' });
             
             // Fallback: If have destination URL, use it
             if (destinationUrl) {
                 setScannedUrl(destinationUrl);
                 setQrResultDialogVisible(true);
             } else {
-                alert('Could not read QR code from the image. Please check if the image contains a valid QR code.');
+                alert('Could not read QR code from the image.');
             }
         }
     }, []);
@@ -8291,40 +8288,14 @@ export default function FlexibleScrollDemo() {
                             <>
                                 {scanningQrCode ? (
                                     // Scanning Animation
-                                    <div style={{ width: '100%' }}>
-                                        {/* Progress Indicator */}
-                                        {scanProgress.step > 0 && (
-                                            <div style={{
-                                                padding: '0.75rem 1rem',
-                                                backgroundColor: isDark ? '#1e293b' : '#f3f4f6',
-                                                border: `1px solid ${isDark ? '#334155' : '#e5e7eb'}`,
-                                                borderRadius: '8px'
-                                            }}>
-                                                <div style={{
-                                                    fontSize: '0.875rem',
-                                                    color: isDark ? '#94a3b8' : '#6b7280',
-                                                    marginBottom: '0.5rem',
-                                                    fontWeight: '500'
-                                                }}>
-                                                    {scanProgress.message}
-                                                </div>
-                                                <div style={{
-                                                    width: '100%',
-                                                    height: '8px',
-                                                    backgroundColor: isDark ? '#0f172a' : '#e5e7eb',
-                                                    borderRadius: '4px',
-                                                    overflow: 'hidden'
-                                                }}>
-                                                    <div style={{
-                                                        width: `${(scanProgress.step / scanProgress.total) * 100}%`,
-                                                        height: '100%',
-                                                        backgroundColor: '#10b981',
-                                                        transition: 'width 0.3s ease',
-                                                        borderRadius: '4px'
-                                                    }}></div>
-                                                </div>
-                                            </div>
-                                        )}
+                                    <div style={{
+                                        textAlign: 'center',
+                                        padding: '1.5rem',
+                                        color: isDark ? '#94a3b8' : '#6b7280',
+                                        fontSize: '14px'
+                                    }}>
+                                        <i className="pi pi-spin pi-spinner" style={{ fontSize: '2rem', marginBottom: '1rem' }}></i>
+                                        <div>Scanning QR code...</div>
                                     </div>
                                 ) : qrCodeImages.length === 0 ? (
                                     <div style={{
