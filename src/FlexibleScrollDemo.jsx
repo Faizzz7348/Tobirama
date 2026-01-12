@@ -2173,6 +2173,26 @@ export default function FlexibleScrollDemo() {
             const freshRoutes = await CustomerService.getRoutes();
             const allLocations = await CustomerService.getDetailData();
             
+            // 🔥 SYNC FROZEN ROW DATA from all locations
+            const updatedFrozenLocation = allLocations.find(loc => 
+                loc.code === 'QLK' || loc.location === 'QL Kitchen'
+            );
+            if (updatedFrozenLocation) {
+                console.log('🔄 Syncing frozen row data after save:', updatedFrozenLocation);
+                setFrozenRowData({
+                    id: updatedFrozenLocation.id,
+                    code: updatedFrozenLocation.code || 'QLK',
+                    location: updatedFrozenLocation.location || 'QL Kitchen',
+                    delivery: updatedFrozenLocation.delivery || 'Available',
+                    images: updatedFrozenLocation.images || [],
+                    powerMode: updatedFrozenLocation.powerMode || 'Daily',
+                    latitude: updatedFrozenLocation.latitude || null,
+                    longitude: updatedFrozenLocation.longitude || null,
+                    address: updatedFrozenLocation.address || '',
+                    description: updatedFrozenLocation.description || ''
+                });
+            }
+            
             // Update routes with location counts
             const routesWithLocationCount = freshRoutes.map(route => {
                 const locationCount = allLocations.filter(loc => loc.routeId === route.id).length;
@@ -3008,6 +3028,26 @@ export default function FlexibleScrollDemo() {
             const sortedFreshData = sortDialogData(freshData);
             setDialogData(sortedFreshData);
             setOriginalDialogData(sortedFreshData);
+            
+            // 🔥 SYNC FROZEN ROW DATA if frozen row was updated
+            const updatedFrozenLocation = sortedFreshData.find(loc => 
+                loc.id === frozenRowData.id || loc.code === 'QLK' || loc.location === 'QL Kitchen'
+            );
+            if (updatedFrozenLocation) {
+                console.log('🔄 Syncing frozen row data from database:', updatedFrozenLocation);
+                setFrozenRowData({
+                    id: updatedFrozenLocation.id,
+                    code: updatedFrozenLocation.code || 'QLK',
+                    location: updatedFrozenLocation.location || 'QL Kitchen',
+                    delivery: updatedFrozenLocation.delivery || 'Available',
+                    images: updatedFrozenLocation.images || [],
+                    powerMode: updatedFrozenLocation.powerMode || 'Daily',
+                    latitude: updatedFrozenLocation.latitude || null,
+                    longitude: updatedFrozenLocation.longitude || null,
+                    address: updatedFrozenLocation.address || '',
+                    description: updatedFrozenLocation.description || ''
+                });
+            }
             
             // Also update localStorage in dev mode for backup
             if (import.meta.env.DEV) {
