@@ -34,7 +34,7 @@ const handlers = {
         const result = await sql(`
           SELECT id, "routeId", location, code, no, delivery, "powerMode", 
                  latitude, longitude, description, images, address, 
-                 "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl",
+                 "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl", "qrCodeImages",
                  "createdAt", "updatedAt"
           FROM "Location"
           WHERE id = $1
@@ -57,7 +57,7 @@ const handlers = {
         const result = await sql(`
           SELECT id, "routeId", location, code, no, delivery, "powerMode",
                  latitude, longitude, description, images, address,
-                 "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl",
+                 "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl", "qrCodeImages",
                  "createdAt", "updatedAt"
           FROM "Location"
           WHERE "routeId" = $1
@@ -76,7 +76,7 @@ const handlers = {
       const result = await sql(`
         SELECT id, "routeId", location, code, no, delivery, "powerMode",
                latitude, longitude, description, images, address,
-               "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl",
+               "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl", "qrCodeImages",
                "createdAt", "updatedAt"
         FROM "Location"
         ORDER BY "createdAt" DESC
@@ -99,7 +99,7 @@ const handlers = {
     const { id } = req.query;
     const { routeId, location, code, no, delivery, powerMode, address, 
             latitude, longitude, description, imageUrl, websiteLink,
-            qrCodeImageUrl, qrCodeDestinationUrl } = req.body;
+            qrCodeImageUrl, qrCodeDestinationUrl, qrCodeImages } = req.body;
 
     // POST add image to location
     if (id && imageUrl) {
@@ -111,7 +111,7 @@ const handlers = {
           WHERE id = $2
           RETURNING id, "routeId", location, code, no, delivery, "powerMode",
                     latitude, longitude, description, images, address,
-                    "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl",
+                    "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl", "qrCodeImages",
                     "createdAt", "updatedAt"
         `, [imageUrl, id]);
         
@@ -147,18 +147,19 @@ const handlers = {
         INSERT INTO "Location" (
           "routeId", location, code, no, delivery, "powerMode", 
           latitude, longitude, description, images, address,
-          "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl",
+          "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl", "qrCodeImages",
           "createdAt", "updatedAt"
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW())
         RETURNING id, "routeId", location, code, no, delivery, "powerMode",
                   latitude, longitude, description, images, address,
-                  "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl",
+                  "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl", "qrCodeImages",
                   "createdAt", "updatedAt"
       `, [routeId, location, code || null, no || null, delivery || null, 
           powerMode || null, latitude || null, longitude || null, 
           description || null, [], address || null, websiteLink || null,
-          qrCodeImageUrl || null, qrCodeDestinationUrl || null]);
+          qrCodeImageUrl || null, qrCodeDestinationUrl || null, 
+          qrCodeImages ? JSON.stringify(qrCodeImages) : '[]']);
       
       res.status(201).json(result[0]);
     } catch (error) {
@@ -175,7 +176,7 @@ const handlers = {
     const { id } = req.query;
     const { locations, location, code, no, delivery, powerMode, address,
             latitude, longitude, description, websiteLink,
-            qrCodeImageUrl, qrCodeDestinationUrl } = req.body;
+            qrCodeImageUrl, qrCodeDestinationUrl, qrCodeImages } = req.body;
 
     // Batch update mode (multiple locations)
     if (locations && Array.isArray(locations)) {
@@ -185,6 +186,14 @@ const handlers = {
 
         for (const loc of locations) {
           try {
+            // Prepare qrCodeImages - convert to JSON string if it's an array
+            let qrCodeImagesValue = loc.qrCodeImages;
+            if (Array.isArray(qrCodeImagesValue)) {
+              qrCodeImagesValue = JSON.stringify(qrCodeImagesValue);
+            } else if (qrCodeImagesValue === null || qrCodeImagesValue === undefined) {
+              qrCodeImagesValue = '[]';
+            }
+
             const result = await sql(`
               UPDATE "Location"
               SET location = COALESCE($1, location),
@@ -199,18 +208,19 @@ const handlers = {
                   "websiteLink" = COALESCE($10, "websiteLink"),
                   "qrCodeImageUrl" = COALESCE($11, "qrCodeImageUrl"),
                   "qrCodeDestinationUrl" = COALESCE($12, "qrCodeDestinationUrl"),
+                  "qrCodeImages" = COALESCE($13::jsonb, "qrCodeImages"),
                   "updatedAt" = NOW()
-              WHERE id = $13
+              WHERE id = $14
               RETURNING id, "routeId", location, code, no, delivery, "powerMode",
                         latitude, longitude, description, images, address,
-                        "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl",
+                        "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl", "qrCodeImages",
                         "createdAt", "updatedAt"
             `, [loc.location || null, loc.code || null, loc.no || null, 
                 loc.delivery || null, loc.powerMode || null, 
                 loc.latitude || null, loc.longitude || null, 
                 loc.description || null, loc.address || null, 
                 loc.websiteLink || null, loc.qrCodeImageUrl || null, 
-                loc.qrCodeDestinationUrl || null, loc.id]);
+                loc.qrCodeDestinationUrl || null, qrCodeImagesValue, loc.id]);
             
             if (result.length > 0) {
               updated.push(result[0]);
@@ -234,6 +244,14 @@ const handlers = {
 
     // Single update mode (legacy)
     try {
+      // Prepare qrCodeImages - convert to JSON string if it's an array
+      let qrCodeImagesValue = qrCodeImages;
+      if (Array.isArray(qrCodeImagesValue)) {
+        qrCodeImagesValue = JSON.stringify(qrCodeImagesValue);
+      } else if (qrCodeImagesValue === null || qrCodeImagesValue === undefined) {
+        qrCodeImagesValue = null; // Don't update if not provided
+      }
+
       const result = await sql(`
         UPDATE "Location"
         SET location = COALESCE($1, location),
@@ -248,16 +266,17 @@ const handlers = {
             "websiteLink" = COALESCE($10, "websiteLink"),
             "qrCodeImageUrl" = COALESCE($11, "qrCodeImageUrl"),
             "qrCodeDestinationUrl" = COALESCE($12, "qrCodeDestinationUrl"),
+            "qrCodeImages" = COALESCE($13::jsonb, "qrCodeImages"),
             "updatedAt" = NOW()
-        WHERE id = $13
+        WHERE id = $14
         RETURNING id, "routeId", location, code, no, delivery, "powerMode",
                   latitude, longitude, description, images, address,
-                  "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl",
+                  "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl", "qrCodeImages",
                   "createdAt", "updatedAt"
       `, [location || null, code || null, no || null, delivery || null,
           powerMode || null, latitude || null, longitude || null,
           description || null, address || null, websiteLink || null,
-          qrCodeImageUrl || null, qrCodeDestinationUrl || null, id]);
+          qrCodeImageUrl || null, qrCodeDestinationUrl || null, qrCodeImagesValue, id]);
       
       if (result.length === 0) {
         return res.status(404).json({ error: 'Location not found' });
@@ -289,7 +308,7 @@ const handlers = {
           WHERE id = $2
           RETURNING id, "routeId", location, code, no, delivery, "powerMode",
                     latitude, longitude, description, images, address,
-                    "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl",
+                    "websiteLink", "qrCodeImageUrl", "qrCodeDestinationUrl", "qrCodeImages",
                     "createdAt", "updatedAt"
         `, [imageUrl, id]);
         
